@@ -10,7 +10,7 @@ DEFAULT_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/120.0.0.0 Safari/537.36"
 )
-REQUEST_TIMEOUT = 12
+REQUEST_TIMEOUT = 5
 
 # Configure session with connection pooling and retries
 retry_strategy = Retry(

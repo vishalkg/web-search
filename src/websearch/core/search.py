@@ -37,9 +37,9 @@ def parallel_search(query: str, num_results: int) -> tuple:
         thread.start()
         threads.append(thread)
 
-    # Wait for completion
+    # Wait for completion with reduced timeout
     for thread in threads:
-        thread.join(timeout=15)
+        thread.join(timeout=8)
 
     return results["ddg"], results["bing"], results["startpage"]
 
