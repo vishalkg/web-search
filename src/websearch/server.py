@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""WebSearch MCP Server - Main server implementation."""
+"""WebSearch MCP Server - Main server implementation with async optimizations."""
 
+import asyncio
 import json
 import logging
 import os
@@ -12,9 +13,8 @@ from fastmcp import FastMCP
 
 from . import __version__
 from .core.content import fetch_single_page_content
-from .core.search import search_web as core_search_web
-from .engines.search import search_bing, search_duckduckgo, search_startpage
-from .utils.cache import content_cache
+from .core.search import search_web as sync_search_web
+from .core.async_search import async_search_web
 
 # Setup logging
 log_file = os.path.join(os.path.dirname(__file__), "web-search.log")
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
 mcp = FastMCP("WebSearch")
-logger.info(f"WebSearch MCP server v{__version__} starting")
+logger.info(f"WebSearch MCP server v{__version__} starting with async optimizations")
 
 
 @mcp.tool(
@@ -63,8 +63,20 @@ logger.info(f"WebSearch MCP server v{__version__} starting")
     }
 )
 def search_web(search_query: str, num_results: int = 10) -> str:
-    """Perform a web search using multiple search engines with caching"""
-    return core_search_web(search_query, num_results)
+    """Perform a web search using multiple search engines with async optimizations"""
+    try:
+        # Use async implementation for better performance
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(async_search_web(search_query, num_results))
+            return result
+        finally:
+            loop.close()
+    except Exception as e:
+        logger.error(f"Async search failed, falling back to sync: {e}")
+        # Fallback to sync implementation
+        return sync_search_web(search_query, num_results)
 
 
 @mcp.tool(

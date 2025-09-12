@@ -6,24 +6,15 @@ import threading
 from typing import Any, Dict, List
 
 from ..engines.search import search_bing, search_duckduckgo, search_startpage
-from ..utils.cache import get_cache_key, search_cache
+from .common import (
+    format_search_response,
+    get_cached_search_result,
+    cache_search_result,
+    log_search_completion,
+    cleanup_expired_cache
+)
 
 logger = logging.getLogger(__name__)
-
-
-def deduplicate_results(
-    all_results: List[Dict[str, Any]], num_results: int
-) -> List[Dict[str, Any]]:
-    """Remove duplicate URLs from search results"""
-    seen_urls = set()
-    unique_results = []
-
-    for result in all_results:
-        if result["url"] not in seen_urls:
-            seen_urls.add(result["url"])
-            unique_results.append(result)
-
-    return unique_results[:num_results]
 
 
 def parallel_search(query: str, num_results: int) -> tuple:
@@ -54,47 +45,35 @@ def parallel_search(query: str, num_results: int) -> tuple:
 
 
 def search_web(search_query: str, num_results: int = 10) -> str:
-    """Perform a web search using multiple search engines with caching"""
+    """Perform a web search using multiple search engines with enhanced caching"""
     logger.info(
         f"Performing multi-engine search for: '{search_query}' "
         f"(num_results: {num_results})"
     )
 
     num_results = min(num_results, 20)
-    cache_key = get_cache_key(f"{search_query}:{num_results}")
 
-    # Check cache
-    cached_result = search_cache.get(cache_key)
+    # Check enhanced cache
+    cached_result = get_cached_search_result(search_query, num_results)
     if cached_result:
-        logger.info(f"Cache hit for key: {cache_key[:32]}...")
-        cached_result["cached"] = True
-        return json.dumps(cached_result, indent=2)
+        return cached_result
 
-    # Clear expired cache entries
-    search_cache.clear_expired()
+    # Clean up expired cache entries
+    cleanup_expired_cache()
 
     # Perform parallel searches
     ddg_results, bing_results, startpage_results = parallel_search(search_query, num_results)
 
-    # Combine and deduplicate results
-    all_results = ddg_results + bing_results + startpage_results
-    unique_results = deduplicate_results(all_results, num_results)
-
-    response = {
-        "query": search_query,
-        "total_results": len(unique_results),
-        "sources": {
-            "DuckDuckGo": len(ddg_results),
-            "Bing": len(bing_results),
-            "Startpage": len(startpage_results),
-        },
-        "results": unique_results,
-        "cached": False,
-    }
-
+    # Format response
+    response_json = format_search_response(
+        search_query, ddg_results, bing_results, startpage_results, num_results
+    )
+    
     # Cache the result
-    search_cache.set(cache_key, response)
-    logger.info(f"Cache set for key: {cache_key[:32]}...")
-    logger.info(f"Search completed: {len(unique_results)} unique results found")
+    response_data = json.loads(response_json)
+    cache_search_result(search_query, num_results, response_data)
+    
+    # Log completion
+    log_search_completion(search_query, num_results, response_data["total_results"], is_async=False)
 
-    return json.dumps(response, indent=2)
+    return response_json
