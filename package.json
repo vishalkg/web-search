@@ -1,0 +1,31 @@
+{
+  "name": "web-search-mcp",
+  "version": "2.1.0",
+  "description": "Advanced web search and content extraction MCP server with multi-engine support",
+  "main": "server.py",
+  "scripts": {
+    "start": "python server.py",
+    "test": "python test_integration.py"
+  },
+  "keywords": [
+    "mcp",
+    "web-search", 
+    "content-extraction",
+    "multi-engine",
+    "ai-tools"
+  ],
+  "author": "Vishal Gupta",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guvishl/web-search-mcp"
+  },
+  "engines": {
+    "python": ">=3.8"
+  },
+  "dependencies": {
+    "requests": ">=2.31.0",
+    "beautifulsoup4": ">=4.12.0",
+    "fastmcp": ">=0.1.0"
+  }
+}
