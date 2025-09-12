@@ -5,4 +5,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Activate virtual environment and run the server
 source "$DIR/../venv/bin/activate"
-exec python "$DIR/server.py" "$@"
+cd "$DIR"
+export PYTHONPATH="$DIR/src:$PYTHONPATH"
+exec python -m websearch.server "$@"
