@@ -33,9 +33,7 @@ class SimpleCache:
 
     def clear_expired(self) -> None:
         with self.lock:
-            expired_keys = [
-                key for key, entry in self.cache.items() if self._is_expired(entry)
-            ]
+            expired_keys = [key for key, entry in self.cache.items() if self._is_expired(entry)]
             for key in expired_keys:
                 del self.cache[key]
 

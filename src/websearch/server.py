@@ -7,7 +7,7 @@ import logging
 import os
 import threading
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import List, Union
 
 from fastmcp import FastMCP
 
@@ -45,9 +45,9 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
         "Use cases: research topics, find information, discover websites, get current news, "
         "find documentation, verify information, search online, explore subjects.\n\n"
         "Example usage:\n"
-        "search_web(\"quantum computing applications\", 5) - returns 5 search results about quantum computing\n"
-        "search_web(\"latest AI research papers\", 10) - finds recent AI research\n"
-        "search_web(\"how to implement binary search\", 7) - searches for binary search tutorials"
+        'search_web("quantum computing applications", 5) - returns 5 search results about quantum computing\n'
+        'search_web("latest AI research papers", 10) - finds recent AI research\n'
+        'search_web("how to implement binary search", 7) - searches for binary search tutorials'
     ),
     annotations={
         "title": "Multi-Engine Web Search",
@@ -59,8 +59,8 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
         "rateLimited": True,
         "requiresNetwork": True,
         "category": "information_retrieval",
-        "version": __version__
-    }
+        "version": __version__,
+    },
 )
 def search_web(search_query: str, num_results: int = 10) -> str:
     """Perform a web search using multiple search engines with async optimizations"""
@@ -93,8 +93,9 @@ def search_web(search_query: str, num_results: int = 10) -> str:
         "Use cases: read webpage content, analyze articles, extract information from URLs, "
         "get full text from search results, read documentation, access content from websites.\n\n"
         "Example usage:\n"
-        "fetch_page_content(\"https://en.wikipedia.org/wiki/Machine_learning\") - extracts text from Wikipedia\n"
-        "fetch_page_content([\"https://docs.python.org/3/tutorial\", \"https://docs.python.org/3/library\"]) - batch processing multiple URLs in parallel"
+        'fetch_page_content("https://en.wikipedia.org/wiki/Machine_learning") - extracts text from Wikipedia\n'
+        'fetch_page_content(["https://docs.python.org/3/tutorial", '
+        '"https://docs.python.org/3/library"]) - batch processing multiple URLs in parallel'
     ),
     annotations={
         "title": "Web Page Content Extraction",
@@ -106,40 +107,40 @@ def search_web(search_query: str, num_results: int = 10) -> str:
         "rateLimited": True,
         "requiresNetwork": True,
         "category": "content_extraction",
-        "version": __version__
-    }
+        "version": __version__,
+    },
 )
 def fetch_page_content(urls: Union[str, List[str]]) -> str:
     """Fetch and extract content from web pages"""
     from .utils.tracking import log_selection_metrics, extract_tracking_from_url
-    
+
     # Handle single URL
     if isinstance(urls, str):
         logger.info(f"📥 DEBUG: Single URL fetch: {urls[:100]}...")
-        
+
         # Log single URL selection
         log_selection_metrics([urls])
-        
+
         # Extract tracking and get clean URL
         engine, search_id, clean_url = extract_tracking_from_url(urls)
         logger.info(f"📥 DEBUG: Extracted - Engine: {engine}, Search ID: {search_id}, Clean URL: {clean_url[:50]}...")
-        
+
         return fetch_single_page_content(clean_url)
-    
+
     # Log batch URL selections
     logger.info(f"📥 DEBUG: Batch URL fetch: {len(urls)} URLs")
     for i, url in enumerate(urls):
         logger.info(f"📥 DEBUG: URL {i+1}: {url[:100]}...")
-    
+
     log_selection_metrics(urls)
-    
+
     # Batch processing for multiple URLs
     logger.info(f"Starting batch fetch for {len(urls)} URLs")
-    
+
     results = []
     threads = []
     thread_results = {}
-    
+
     def fetch_url_thread(url_to_fetch: str, index: int):
         try:
             # Extract tracking and get clean URL
@@ -155,22 +156,22 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "cached": False,
             }
-    
+
     # Start threads for parallel fetching
     for i, url_to_fetch in enumerate(urls):
         thread = threading.Thread(target=fetch_url_thread, args=(url_to_fetch, i))
         thread.start()
         threads.append(thread)
-    
+
     # Wait for all threads to complete
     for thread in threads:
         thread.join(timeout=25)
-    
+
     # Collect results in order
     for i in range(len(urls)):
         if i in thread_results:
             results.append(thread_results[i])
-    
+
     batch_response = {
         "batch_request": True,
         "total_urls": len(urls),
@@ -179,11 +180,8 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "results": results,
     }
-    
-    logger.info(
-        f"Batch fetch completed: "
-        f"{batch_response['successful_fetches']}/{len(urls)} successful"
-    )
+
+    logger.info(f"Batch fetch completed: " f"{batch_response['successful_fetches']}/{len(urls)} successful")
     return json.dumps(batch_response, indent=2)
 
 

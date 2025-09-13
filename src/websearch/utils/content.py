@@ -42,10 +42,13 @@ def get_troubleshooting_tips(error_type: str) -> str:
     tips = {
         "timeout": "The website took too long to respond. Try again later or check if the URL is correct.",
         "connection": "Could not connect to the website. Check your internet connection or if the website is down.",
-        "http_4xx": "Server returned a client error (4xx). The URL might be incorrect or you don't have permission to access it.",
+        "http_4xx": (
+            "Server returned a client error (4xx). The URL might be incorrect "
+            "or you don't have permission to access it."
+        ),
         "http_5xx": "Server returned a server error (5xx). The website might be experiencing issues, try again later.",
         "parse": "Could not parse the website content. The site might use unsupported formatting or scripts.",
-        "general": "An unexpected error occurred. Check the URL and try again later."
+        "general": "An unexpected error occurred. Check the URL and try again later.",
     }
-    
+
     return tips.get(error_type, tips["general"])
