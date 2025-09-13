@@ -3,7 +3,7 @@
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+
 
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
@@ -42,31 +42,29 @@ def fetch_single_page_content(url: str) -> str:
         if truncated:
             text = text[:MAX_CONTENT_LENGTH] + "... [Content truncated]"
 
-        result.update({
-            "success": True,
-            "content": text,
-            "content_length": len(text),
-            "truncated": truncated,
-            "error": None,
-        })
+        result.update(
+            {
+                "success": True,
+                "content": text,
+                "content_length": len(text),
+                "truncated": truncated,
+                "error": None,
+            }
+        )
 
         content_cache.set(cache_key, result)
         logger.info(f"Cache set for key: {cache_key[:32]}...")
         logger.info(f"Successfully fetched {len(text)} characters from {url}")
 
     except Timeout:
-        result = create_error_result(
-            url, "Request timeout - page took too long to respond", "timeout"
-        )
+        result = create_error_result(url, "Request timeout - page took too long to respond", "timeout")
         logger.error(f"Timeout fetching {url}")
     except ConnectionError as e:
         result = create_error_result(url, f"Connection error: {str(e)}", "connection")
         logger.error(f"Connection error fetching {url}: {str(e)}")
     except HTTPError as e:
         error_type = "http_5xx" if e.response.status_code >= 500 else "http_4xx"
-        result = create_error_result(
-            url, f"HTTP error {e.response.status_code}: {str(e)}", error_type
-        )
+        result = create_error_result(url, f"HTTP error {e.response.status_code}: {str(e)}", error_type)
         logger.error(f"HTTP error {e.response.status_code} fetching {url}: {str(e)}")
     except RequestException as e:
         result = create_error_result(url, f"Request error: {str(e)}", "general")

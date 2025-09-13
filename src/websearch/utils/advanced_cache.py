@@ -26,13 +26,13 @@ class LRUCache:
         if not self.compress:
             return data
         json_str = json.dumps(data)
-        return gzip.compress(json_str.encode('utf-8'))
+        return gzip.compress(json_str.encode("utf-8"))
 
     def _decompress_data(self, compressed_data: bytes) -> Any:
         """Decompress gzip data"""
         if not self.compress:
             return compressed_data
-        json_str = gzip.decompress(compressed_data).decode('utf-8')
+        json_str = gzip.decompress(compressed_data).decode("utf-8")
         return json.loads(json_str)
 
     def get(self, key: str) -> Optional[Any]:
@@ -52,20 +52,14 @@ class LRUCache:
             # Remove oldest entries if at capacity
             while len(self.cache) >= self.max_size:
                 self.cache.popitem(last=False)
-            
+
             compressed_value = self._compress_data(value)
-            self.cache[key] = {
-                "value": compressed_value,
-                "timestamp": time.time()
-            }
+            self.cache[key] = {"value": compressed_value, "timestamp": time.time()}
 
     def clear_expired(self) -> int:
         """Clear expired entries and return count removed"""
         with self.lock:
-            expired_keys = [
-                key for key, entry in self.cache.items() 
-                if self._is_expired(entry)
-            ]
+            expired_keys = [key for key, entry in self.cache.items() if self._is_expired(entry)]
             for key in expired_keys:
                 del self.cache[key]
             return len(expired_keys)
@@ -76,8 +70,8 @@ class LRUCache:
             return {
                 "size": len(self.cache),
                 "max_size": self.max_size,
-                "hit_rate": getattr(self, '_hits', 0) / max(getattr(self, '_requests', 1), 1),
-                "compression_enabled": self.compress
+                "hit_rate": getattr(self, "_hits", 0) / max(getattr(self, "_requests", 1), 1),
+                "compression_enabled": self.compress,
             }
 
 
