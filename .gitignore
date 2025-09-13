@@ -77,3 +77,5 @@ dmypy.json
 # Metrics and logs
 search-metrics.jsonl
 web-search.log
+# Strategy and planning documents (local only)
+MCP_SERVER_OPTIMIZATION_STRATEGY.md
