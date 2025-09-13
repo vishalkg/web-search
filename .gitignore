@@ -74,3 +74,6 @@ dmypy.json
 # Temporary files
 *.tmp
 *.temp
+# Metrics and logs
+search-metrics.jsonl
+web-search.log

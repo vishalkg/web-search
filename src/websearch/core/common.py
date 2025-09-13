@@ -14,15 +14,20 @@ logger = logging.getLogger(__name__)
 def deduplicate_results(
     all_results: List[Dict[str, Any]], num_results: int
 ) -> List[Dict[str, Any]]:
-    """Remove duplicate URLs from search results"""
-    seen_urls = set()
-    unique_results = []
-
+    """Remove duplicate URLs, keeping the best-ranked result"""
+    url_to_best = {}
+    
     for result in all_results:
-        if result["url"] not in seen_urls:
-            seen_urls.add(result["url"])
-            unique_results.append(result)
-
+        url = result["url"]
+        rank = result.get("rank", 999)  # Default high rank if missing
+        
+        if url not in url_to_best or rank < url_to_best[url]["rank"]:
+            url_to_best[url] = result
+    
+    # Return best results, sorted by original rank
+    unique_results = list(url_to_best.values())
+    unique_results.sort(key=lambda x: x.get("rank", 999))
+    
     return unique_results[:num_results]
 
 
@@ -44,10 +49,43 @@ def format_search_response(
     num_results: int,
     cached: bool = False
 ) -> str:
-    """Format the final search response"""
-    # Combine and deduplicate results
-    all_results = ddg_results + bing_results + startpage_results
+    """Format the final search response with URL tracking"""
+    from ..utils.tracking import add_tracking_to_url, generate_search_id
+    
+    # Generate search ID for tracking
+    search_id = generate_search_id()
+    logger.info(f"🔍 DEBUG: Generated search_id: {search_id}")
+    
+    # Add engine info to results (but don't modify URLs yet)
+    def add_engine_info(results: List[Dict[str, Any]], engine: str) -> List[Dict[str, Any]]:
+        engine_results = []
+        for i, result in enumerate(results):
+            result_with_engine = result.copy()
+            result_with_engine['_source_engine'] = engine
+            result_with_engine['rank'] = i + 1  # Add ranking info
+            engine_results.append(result_with_engine)
+        return engine_results
+    
+    # Add engine info to each result
+    ddg_with_engine = add_engine_info(ddg_results, 'ddg')
+    bing_with_engine = add_engine_info(bing_results, 'bing') 
+    startpage_with_engine = add_engine_info(startpage_results, 'startpage')
+    
+    logger.info(f"🔍 DEBUG: Results before dedup - DDG: {len(ddg_with_engine)}, Bing: {len(bing_with_engine)}, Startpage: {len(startpage_with_engine)}")
+    
+    # Combine and deduplicate (best ranking wins)
+    all_results = ddg_with_engine + bing_with_engine + startpage_with_engine
     unique_results = deduplicate_results(all_results, num_results)
+    
+    logger.info(f"🔍 DEBUG: After dedup: {len(unique_results)} unique results")
+    
+    # Now add tracking to deduplicated results
+    for i, result in enumerate(unique_results):
+        engine = result.pop('_source_engine')  # Remove temp field
+        original_url = result['url']
+        tracked_url = add_tracking_to_url(result['url'], engine, search_id)
+        result['url'] = tracked_url
+        logger.info(f"🔍 DEBUG: Result {i+1} - Engine: {engine}, Original: {original_url[:50]}..., Tracked: {tracked_url[:80]}...")
 
     response = {
         "query": search_query,
