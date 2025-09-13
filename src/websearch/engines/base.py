@@ -28,7 +28,7 @@ def search_engine_base(
         logger.error(f"{source_name} search connection error: {str(e)}")
         return []
     except HTTPError as e:
-        status_code = e.response.status_code if hasattr(e, 'response') else 'unknown'
+        status_code = e.response.status_code if hasattr(e, "response") else "unknown"
         logger.error(f"{source_name} search HTTP error {status_code}: {str(e)}")
         return []
     except RequestException as e:
