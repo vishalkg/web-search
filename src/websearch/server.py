@@ -111,8 +111,27 @@ def search_web(search_query: str, num_results: int = 10) -> str:
 )
 def fetch_page_content(urls: Union[str, List[str]]) -> str:
     """Fetch and extract content from web pages"""
+    from .utils.tracking import log_selection_metrics, extract_tracking_from_url
+    
+    # Handle single URL
     if isinstance(urls, str):
-        return fetch_single_page_content(urls)
+        logger.info(f"📥 DEBUG: Single URL fetch: {urls[:100]}...")
+        
+        # Log single URL selection
+        log_selection_metrics([urls])
+        
+        # Extract tracking and get clean URL
+        engine, search_id, clean_url = extract_tracking_from_url(urls)
+        logger.info(f"📥 DEBUG: Extracted - Engine: {engine}, Search ID: {search_id}, Clean URL: {clean_url[:50]}...")
+        
+        return fetch_single_page_content(clean_url)
+    
+    # Log batch URL selections
+    logger.info(f"📥 DEBUG: Batch URL fetch: {len(urls)} URLs")
+    for i, url in enumerate(urls):
+        logger.info(f"📥 DEBUG: URL {i+1}: {url[:100]}...")
+    
+    log_selection_metrics(urls)
     
     # Batch processing for multiple URLs
     logger.info(f"Starting batch fetch for {len(urls)} URLs")
@@ -123,7 +142,10 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
     
     def fetch_url_thread(url_to_fetch: str, index: int):
         try:
-            result_json = fetch_single_page_content(url_to_fetch)
+            # Extract tracking and get clean URL
+            engine, search_id, clean_url = extract_tracking_from_url(url_to_fetch)
+            logger.info(f"📥 DEBUG: Thread {index} - Engine: {engine}, Clean URL: {clean_url[:50]}...")
+            result_json = fetch_single_page_content(clean_url)
             thread_results[index] = json.loads(result_json)
         except Exception as e:
             thread_results[index] = {
