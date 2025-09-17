@@ -49,18 +49,6 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
         'search_web("latest AI research papers", 10) - finds recent AI research\n'
         'search_web("how to implement binary search", 7) - searches for binary search tutorials'
     ),
-    annotations={
-        "title": "Multi-Engine Web Search",
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "openWorldHint": True,
-        "idempotentHint": True,
-        "cacheable": True,
-        "rateLimited": True,
-        "requiresNetwork": True,
-        "category": "information_retrieval",
-        "version": __version__,
-    },
 )
 def search_web(search_query: str, num_results: int = 10) -> str:
     """Perform a web search using multiple search engines with async optimizations"""
@@ -97,18 +85,6 @@ def search_web(search_query: str, num_results: int = 10) -> str:
         'fetch_page_content(["https://docs.python.org/3/tutorial", '
         '"https://docs.python.org/3/library"]) - batch processing multiple URLs in parallel'
     ),
-    annotations={
-        "title": "Web Page Content Extraction",
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "openWorldHint": True,
-        "idempotentHint": True,
-        "cacheable": True,
-        "rateLimited": True,
-        "requiresNetwork": True,
-        "category": "content_extraction",
-        "version": __version__,
-    },
 )
 def fetch_page_content(urls: Union[str, List[str]]) -> str:
     """Fetch and extract content from web pages"""
