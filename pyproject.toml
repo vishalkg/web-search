@@ -12,6 +12,7 @@ dependencies = [
     "fastmcp>=2.12.0",
     "requests",
     "beautifulsoup4",
+    "aiohttp",
 ]
 
 [tool.setuptools.packages.find]
