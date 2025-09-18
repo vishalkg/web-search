@@ -161,62 +161,59 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
     return json.dumps(batch_response, indent=2)
 
 
-# Add health check endpoint
-@mcp.custom_route("/health", methods=["GET"])
-async def health_check(request):
-    """Health check endpoint for monitoring."""
-    from starlette.responses import JSONResponse
-    
-    return JSONResponse({
-        "status": "healthy",
-        "server": "WebSearch MCP",
-        "version": "2.1.0",
-        "transport": "http",
-        "port": 8090
-    })
-
-
 def main():
     """Main entry point for the server"""
     import sys
     
-    # Check for transport argument
-    if len(sys.argv) > 1 and sys.argv[1] == '--http':
-        logger.info("Starting server with HTTP transport on port 8090")
-        mcp.run(transport='http', host='127.0.0.1', port=8090)
-    elif len(sys.argv) > 1 and sys.argv[1] == '--daemon':
-        logger.info("Starting server in daemon mode with HTTP transport on port 8090")
-        from .daemon import DaemonManager
-        from .connection_manager import connection_manager
-        
-        daemon = DaemonManager()
-        
-        if daemon.is_running():
-            logger.error("Daemon already running")
-            sys.exit(1)
-        
-        daemon.setup_signal_handlers()
-        daemon.write_pid()
-        
-        async def start_with_connection_manager():
-            """Start server with connection management."""
-            await connection_manager.start()
+    try:
+        # Check for transport argument
+        if len(sys.argv) > 1 and sys.argv[1] == '--http':
+            logger.info("Starting server with HTTP transport on port 8090")
+            mcp.run(transport='http', host='127.0.0.1', port=8090)
+        elif len(sys.argv) > 1 and sys.argv[1] == '--daemon':
+            logger.info("Starting server in daemon mode with HTTP transport on port 8090")
+            from .daemon import DaemonManager
+            from .connection_manager import connection_manager
+            
+            daemon = DaemonManager()
+            
+            if daemon.is_running():
+                logger.info("Daemon already running - using existing instance")
+                print("WebSearch MCP daemon already running", file=sys.stderr)
+                sys.exit(0)  # Success - daemon is available
+            
+            daemon.setup_signal_handlers()
+            daemon.write_pid()
+            
+            async def start_with_connection_manager():
+                """Start server with connection management."""
+                await connection_manager.start()
+                try:
+                    await mcp.run_async(transport='http', host='127.0.0.1', port=8090)
+                finally:
+                    await connection_manager.stop()
+                    daemon.cleanup()
+            
             try:
-                await mcp.run_async(transport='http', host='127.0.0.1', port=8090)
-            finally:
-                await connection_manager.stop()
+                import asyncio
+                asyncio.run(start_with_connection_manager())
+            except KeyboardInterrupt:
+                logger.info("Received interrupt signal")
+                print("WebSearch MCP daemon stopped by user", file=sys.stderr)
+            except Exception as e:
+                logger.error(f"Daemon failed to start: {e}")
+                print(f"ERROR: WebSearch MCP daemon failed to start: {e}", file=sys.stderr)
                 daemon.cleanup()
-        
-        try:
-            import asyncio
-            asyncio.run(start_with_connection_manager())
-        except KeyboardInterrupt:
-            logger.info("Received interrupt signal")
-        finally:
-            daemon.cleanup()
-    else:
-        logger.info("Starting server with stdio transport (default)")
-        mcp.run()
+                sys.exit(1)
+            finally:
+                daemon.cleanup()
+        else:
+            logger.info("Starting server with stdio transport (default)")
+            mcp.run()
+    except Exception as e:
+        logger.error(f"Server failed to start: {e}")
+        print(f"ERROR: WebSearch MCP server failed to start: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
