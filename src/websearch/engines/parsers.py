@@ -5,10 +5,14 @@ from typing import Any, Dict, List, cast
 from bs4 import BeautifulSoup, Tag
 
 
-def parse_startpage_results(soup: BeautifulSoup, num_results: int) -> List[Dict[str, Any]]:
+def parse_startpage_results(
+    soup: BeautifulSoup, num_results: int
+) -> List[Dict[str, Any]]:
     """Parse Startpage search results"""
     results = []
-    for rank, result_tag in enumerate(soup.find_all("div", class_="result")[:num_results], 1):
+    for rank, result_tag in enumerate(
+        soup.find_all("div", class_="result")[:num_results], 1
+    ):
         result = cast(Tag, result_tag)
         title_elem = result.find("a", class_="result-link")
 
@@ -38,10 +42,14 @@ def parse_startpage_results(soup: BeautifulSoup, num_results: int) -> List[Dict[
     return results
 
 
-def parse_duckduckgo_results(soup: BeautifulSoup, num_results: int) -> List[Dict[str, Any]]:
+def parse_duckduckgo_results(
+    soup: BeautifulSoup, num_results: int
+) -> List[Dict[str, Any]]:
     """Parse DuckDuckGo search results"""
     results = []
-    for rank, result_tag in enumerate(soup.find_all("div", class_="result")[:num_results], 1):
+    for rank, result_tag in enumerate(
+        soup.find_all("div", class_="result")[:num_results], 1
+    ):
         result = cast(Tag, result_tag)
         title_elem = result.find("a", class_="result__a")
 
@@ -74,7 +82,9 @@ def parse_duckduckgo_results(soup: BeautifulSoup, num_results: int) -> List[Dict
 def parse_bing_results(soup: BeautifulSoup, num_results: int) -> List[Dict[str, Any]]:
     """Parse Bing search results"""
     results = []
-    for rank, result_tag in enumerate(soup.find_all("li", class_="b_algo")[:num_results], 1):
+    for rank, result_tag in enumerate(
+        soup.find_all("li", class_="b_algo")[:num_results], 1
+    ):
         result = cast(Tag, result_tag)
         title_elem = result.find("h2")
         title = None

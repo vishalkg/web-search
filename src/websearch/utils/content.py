@@ -21,7 +21,9 @@ def extract_text_content(html: str) -> str:
     return " ".join(chunk for chunk in chunks if chunk)
 
 
-def create_error_result(url: str, error_msg: str, error_type: str = "general") -> Dict[str, Any]:
+def create_error_result(
+    url: str, error_msg: str, error_type: str = "general"
+) -> Dict[str, Any]:
     """Create standardized error result with error type classification"""
     return {
         "url": url,
@@ -40,14 +42,26 @@ def create_error_result(url: str, error_msg: str, error_type: str = "general") -
 def get_troubleshooting_tips(error_type: str) -> str:
     """Return troubleshooting suggestions based on error type"""
     tips = {
-        "timeout": "The website took too long to respond. Try again later or check if the URL is correct.",
-        "connection": "Could not connect to the website. Check your internet connection or if the website is down.",
+        "timeout": (
+            "The website took too long to respond. Try again later or check if "
+            "the URL is correct."
+        ),
+        "connection": (
+            "Could not connect to the website. Check your internet connection "
+            "or if the website is down."
+        ),
         "http_4xx": (
             "Server returned a client error (4xx). The URL might be incorrect "
             "or you don't have permission to access it."
         ),
-        "http_5xx": "Server returned a server error (5xx). The website might be experiencing issues, try again later.",
-        "parse": "Could not parse the website content. The site might use unsupported formatting or scripts.",
+        "http_5xx": (
+            "Server returned a server error (5xx). The website might be "
+            "experiencing issues, try again later."
+        ),
+        "parse": (
+            "Could not parse the website content. The site might use "
+            "unsupported formatting or scripts."
+        ),
         "general": "An unexpected error occurred. Check the URL and try again later.",
     }
 

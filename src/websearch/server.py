@@ -12,9 +12,9 @@ from typing import List, Union
 from fastmcp import FastMCP
 
 from . import __version__
+from .core.async_search import async_search_web
 from .core.content import fetch_single_page_content
 from .core.search import search_web as sync_search_web
-from .core.async_search import async_search_web
 
 # Setup logging
 log_file = os.path.join(os.path.dirname(__file__), "web-search.log")
@@ -33,21 +33,24 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
 @mcp.tool(
     name="search_web",
     description=(
-        "Search across multiple search engines (DuckDuckGo, Bing, Startpage) with intelligent "
-        "caching and parallel processing. Returns comprehensive results with titles, URLs, "
-        "and snippets from multiple sources.\n\n"
+        "Search across multiple search engines (DuckDuckGo, Bing, Startpage) with "
+        "intelligent caching and parallel processing. Returns comprehensive results "
+        "with titles, URLs, and snippets from multiple sources.\n\n"
         "Features:\n"
         "• Multi-engine search with result aggregation\n"
         "• Intelligent caching for improved performance\n"
         "• Parallel execution for optimal speed\n"
         "• Comprehensive error handling and retry logic\n"
         "• Rate limiting and respectful crawling\n\n"
-        "Use cases: research topics, find information, discover websites, get current news, "
-        "find documentation, verify information, search online, explore subjects.\n\n"
+        "Use cases: research topics, find information, discover websites, get current "
+        "news, find documentation, verify information, search online, explore "
+        "subjects.\n\n"
         "Example usage:\n"
-        'search_web("quantum computing applications", 5) - returns 5 search results about quantum computing\n'
+        'search_web("quantum computing applications", 5) - returns 5 search results '
+        "about quantum computing\n"
         'search_web("latest AI research papers", 10) - finds recent AI research\n'
-        'search_web("how to implement binary search", 7) - searches for binary search tutorials'
+        'search_web("how to implement binary search", 7) - searches for binary search '
+        "tutorials"
     ),
 )
 def search_web(search_query: str, num_results: int = 10) -> str:
@@ -57,7 +60,9 @@ def search_web(search_query: str, num_results: int = 10) -> str:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(async_search_web(search_query, num_results))
+            result = loop.run_until_complete(
+                async_search_web(search_query, num_results)
+            )
             return result
         finally:
             loop.close()
@@ -70,25 +75,30 @@ def search_web(search_query: str, num_results: int = 10) -> str:
 @mcp.tool(
     name="fetch_page_content",
     description=(
-        "Extract clean, readable text content from web pages with intelligent parsing and "
-        "parallel processing. Supports single URLs or batch processing of multiple URLs.\n\n"
+        "Extract clean, readable text content from web pages with intelligent parsing "
+        "and parallel processing. Supports single URLs or batch processing of multiple "
+        "URLs.\n\n"
         "Features:\n"
         "• HTML-to-text conversion with formatting preservation\n"
         "• Intelligent content extraction (removes ads, navigation)\n"
         "• Parallel processing for multiple URLs\n"
         "• Caching for improved performance\n"
         "• Automatic retry with exponential backoff\n\n"
-        "Use cases: read webpage content, analyze articles, extract information from URLs, "
-        "get full text from search results, read documentation, access content from websites.\n\n"
+        "Use cases: read webpage content, analyze articles, extract information from "
+        "URLs, get full text from search results, read documentation, access content "
+        "from websites.\n\n"
         "Example usage:\n"
-        'fetch_page_content("https://en.wikipedia.org/wiki/Machine_learning") - extracts text from Wikipedia\n'
+        'fetch_page_content("https://en.wikipedia.org/wiki/Machine_learning") - '
+        "extracts text from Wikipedia\n"
         'fetch_page_content(["https://docs.python.org/3/tutorial", '
-        '"https://docs.python.org/3/library"]) - batch processing multiple URLs in parallel'
+        '"https://docs.python.org/3/library"]) - batch processing multiple URLs in '
+        "parallel"
     ),
 )
 def fetch_page_content(urls: Union[str, List[str]]) -> str:
     """Fetch and extract content from web pages"""
-    from .utils.tracking import log_selection_metrics, extract_tracking_from_url
+    from .utils.tracking import (extract_tracking_from_url,
+                                 log_selection_metrics)
 
     # Handle single URL
     if isinstance(urls, str):
@@ -99,7 +109,10 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
 
         # Extract tracking and get clean URL
         engine, search_id, clean_url = extract_tracking_from_url(urls)
-        logger.info(f"📥 DEBUG: Extracted - Engine: {engine}, Search ID: {search_id}, Clean URL: {clean_url[:50]}...")
+        logger.info(
+            f"📥 DEBUG: Extracted - Engine: {engine}, Search ID: {search_id}, "
+            f"Clean URL: {clean_url[:50]}..."
+        )
 
         return fetch_single_page_content(clean_url)
 
@@ -121,7 +134,10 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
         try:
             # Extract tracking and get clean URL
             engine, search_id, clean_url = extract_tracking_from_url(url_to_fetch)
-            logger.info(f"📥 DEBUG: Thread {index} - Engine: {engine}, Clean URL: {clean_url[:50]}...")
+            logger.info(
+                f"📥 DEBUG: Thread {index} - Engine: {engine}, "
+                f"Clean URL: {clean_url[:50]}..."
+            )
             result_json = fetch_single_page_content(clean_url)
             thread_results[index] = json.loads(result_json)
         except Exception as e:
@@ -157,7 +173,10 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
         "results": results,
     }
 
-    logger.info(f"Batch fetch completed: " f"{batch_response['successful_fetches']}/{len(urls)} successful")
+    logger.info(
+        f"Batch fetch completed: "
+        f"{batch_response['successful_fetches']}/{len(urls)} successful"
+    )
     return json.dumps(batch_response, indent=2)
 
 
