@@ -4,8 +4,8 @@ import json
 import logging
 import os
 from datetime import datetime
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from typing import List, Tuple
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 

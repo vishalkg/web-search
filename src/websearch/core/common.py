@@ -5,13 +5,15 @@ import logging
 from typing import Any, Dict, List
 from urllib.parse import quote_plus
 
-from ..utils.cache import get_cache_key
 from ..utils.advanced_cache import enhanced_search_cache
+from ..utils.cache import get_cache_key
 
 logger = logging.getLogger(__name__)
 
 
-def deduplicate_results(all_results: List[Dict[str, Any]], num_results: int) -> List[Dict[str, Any]]:
+def deduplicate_results(
+    all_results: List[Dict[str, Any]], num_results: int
+) -> List[Dict[str, Any]]:
     """Remove duplicate URLs, keeping the best-ranked result"""
     url_to_best = {}
 
@@ -55,7 +57,9 @@ def format_search_response(
     logger.info(f"🔍 DEBUG: Generated search_id: {search_id}")
 
     # Add engine info to results (but don't modify URLs yet)
-    def add_engine_info(results: List[Dict[str, Any]], engine: str) -> List[Dict[str, Any]]:
+    def add_engine_info(
+        results: List[Dict[str, Any]], engine: str
+    ) -> List[Dict[str, Any]]:
         engine_results = []
         for i, result in enumerate(results):
             result_with_engine = result.copy()
@@ -119,14 +123,18 @@ def get_cached_search_result(search_query: str, num_results: int) -> str | None:
     return None
 
 
-def cache_search_result(search_query: str, num_results: int, response_data: Dict[str, Any]) -> None:
+def cache_search_result(
+    search_query: str, num_results: int, response_data: Dict[str, Any]
+) -> None:
     """Cache search result in enhanced cache"""
     cache_key = get_cache_key(f"{search_query}:{num_results}")
     enhanced_search_cache.set(cache_key, response_data)
     logger.info(f"Enhanced cache set for key: {cache_key[:32]}...")
 
 
-def log_search_completion(search_query: str, num_results: int, unique_count: int, is_async: bool = False) -> None:
+def log_search_completion(
+    search_query: str, num_results: int, unique_count: int, is_async: bool = False
+) -> None:
     """Log search completion with cache stats"""
     search_type = "Async" if is_async else "Sync"
     cache_stats = enhanced_search_cache.get_stats()

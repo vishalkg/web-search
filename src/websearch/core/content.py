@@ -4,8 +4,8 @@ import json
 import logging
 from datetime import datetime, timezone
 
-
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
+from requests.exceptions import (ConnectionError, HTTPError, RequestException,
+                                 Timeout)
 
 from ..utils.cache import content_cache, get_cache_key
 from ..utils.content import create_error_result, extract_text_content
@@ -57,14 +57,18 @@ def fetch_single_page_content(url: str) -> str:
         logger.info(f"Successfully fetched {len(text)} characters from {url}")
 
     except Timeout:
-        result = create_error_result(url, "Request timeout - page took too long to respond", "timeout")
+        result = create_error_result(
+            url, "Request timeout - page took too long to respond", "timeout"
+        )
         logger.error(f"Timeout fetching {url}")
     except ConnectionError as e:
         result = create_error_result(url, f"Connection error: {str(e)}", "connection")
         logger.error(f"Connection error fetching {url}: {str(e)}")
     except HTTPError as e:
         error_type = "http_5xx" if e.response.status_code >= 500 else "http_4xx"
-        result = create_error_result(url, f"HTTP error {e.response.status_code}: {str(e)}", error_type)
+        result = create_error_result(
+            url, f"HTTP error {e.response.status_code}: {str(e)}", error_type
+        )
         logger.error(f"HTTP error {e.response.status_code} fetching {url}: {str(e)}")
     except RequestException as e:
         result = create_error_result(url, f"Request error: {str(e)}", "general")

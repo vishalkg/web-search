@@ -8,11 +8,8 @@ from urllib.parse import quote_plus
 import aiohttp
 from bs4 import BeautifulSoup
 
-from .parsers import (
-    parse_bing_results,
-    parse_duckduckgo_results,
-    parse_startpage_results,
-)
+from .parsers import (parse_bing_results, parse_duckduckgo_results,
+                      parse_startpage_results)
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +43,22 @@ async def async_search_engine_base(
 async def async_search_duckduckgo(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search DuckDuckGo"""
     url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
-    return await async_search_engine_base(url, parse_duckduckgo_results, "DuckDuckGo", query, num_results)
+    return await async_search_engine_base(
+        url, parse_duckduckgo_results, "DuckDuckGo", query, num_results
+    )
 
 
 async def async_search_bing(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Bing"""
     url = f"https://www.bing.com/search?q={quote_plus(query)}"
-    return await async_search_engine_base(url, parse_bing_results, "Bing", query, num_results)
+    return await async_search_engine_base(
+        url, parse_bing_results, "Bing", query, num_results
+    )
 
 
 async def async_search_startpage(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Startpage"""
     url = f"https://www.startpage.com/sp/search?query={quote_plus(query)}"
-    return await async_search_engine_base(url, parse_startpage_results, "Startpage", query, num_results)
+    return await async_search_engine_base(
+        url, parse_startpage_results, "Startpage", query, num_results
+    )
