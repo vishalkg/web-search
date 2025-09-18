@@ -163,7 +163,18 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
 
 def main():
     """Main entry point for the server"""
-    mcp.run()
+    import sys
+    
+    # Check for transport argument
+    if len(sys.argv) > 1 and sys.argv[1] == '--http':
+        logger.info("Starting server with HTTP transport on port 8080")
+        mcp.run(transport='http', host='127.0.0.1', port=8080)
+    elif len(sys.argv) > 1 and sys.argv[1] == '--daemon':
+        logger.info("Starting server in daemon mode with HTTP transport on port 8080")
+        mcp.run(transport='http', host='127.0.0.1', port=8080)
+    else:
+        logger.info("Starting server with stdio transport (default)")
+        mcp.run()
 
 
 if __name__ == "__main__":
