@@ -161,6 +161,21 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
     return json.dumps(batch_response, indent=2)
 
 
+# Add health check endpoint
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request):
+    """Health check endpoint for monitoring."""
+    from starlette.responses import JSONResponse
+    
+    return JSONResponse({
+        "status": "healthy",
+        "server": "WebSearch MCP",
+        "version": "2.1.0",
+        "transport": "http",
+        "port": 8090
+    })
+
+
 def main():
     """Main entry point for the server"""
     import sys

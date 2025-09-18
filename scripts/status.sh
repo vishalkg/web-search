@@ -22,13 +22,15 @@ echo "Status: RUNNING"
 echo "PID: $PID"
 echo "Server URL: http://127.0.0.1:8090/mcp"
 
-# Test server response
+# Test health endpoint
 if command -v curl >/dev/null 2>&1; then
-    echo -n "Server response: "
-    if curl -s --max-time 3 "http://127.0.0.1:8090/mcp" >/dev/null 2>&1; then
+    echo -n "Health check: "
+    HEALTH=$(curl -s --max-time 3 "http://127.0.0.1:8090/health" 2>/dev/null)
+    if echo "$HEALTH" | grep -q "healthy"; then
         echo "OK"
+        echo "Server info: $(echo "$HEALTH" | grep -o '"server":"[^"]*"' | cut -d'"' -f4) v$(echo "$HEALTH" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)"
     else
-        echo "NOT RESPONDING"
+        echo "UNHEALTHY"
     fi
 fi
 
