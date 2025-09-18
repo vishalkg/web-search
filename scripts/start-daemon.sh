@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start WebSearch MCP daemon
+# Start WebSearch MCP daemon (idempotent)
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_DIR="$(dirname "$DIR")"
@@ -10,7 +10,8 @@ if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")
     if kill -0 "$PID" 2>/dev/null; then
         echo "Daemon already running (PID: $PID)"
-        exit 1
+        echo "Server URL: http://127.0.0.1:8090/mcp"
+        exit 0  # Success - daemon is running
     else
         echo "Removing stale PID file"
         rm -f "$PID_FILE"

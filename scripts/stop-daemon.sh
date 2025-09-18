@@ -1,21 +1,21 @@
 #!/bin/bash
-# Stop WebSearch MCP daemon
+# Stop WebSearch MCP daemon (idempotent)
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_DIR="$(dirname "$DIR")"
 PID_FILE="$PROJECT_DIR/websearch.pid"
 
 if [ ! -f "$PID_FILE" ]; then
-    echo "No PID file found. Daemon may not be running."
-    exit 1
+    echo "Daemon not running (no PID file)"
+    exit 0  # Success - daemon is stopped
 fi
 
 PID=$(cat "$PID_FILE")
 
 if ! kill -0 "$PID" 2>/dev/null; then
-    echo "Process $PID not found. Removing stale PID file."
+    echo "Daemon not running (process not found)"
     rm -f "$PID_FILE"
-    exit 1
+    exit 0  # Success - daemon is stopped
 fi
 
 echo "Stopping daemon (PID: $PID)..."
