@@ -10,9 +10,43 @@ A Model Context Protocol (MCP) server that provides web search capabilities usin
 - **Source attribution**: Shows which search engine provided each result
 - **Comprehensive logging**: Logs all operations to `web-search.log`
 - **Standalone**: Pre-configured virtual environment included - no setup required
+- **HTTP Daemon Mode**: Single server instance serving multiple Q chat sessions
 - **Two tools available**:
   - `SearchWeb`: Multi-engine web search
   - `FetchPageContent`: Extract text content from web pages
+
+## HTTP Daemon Mode
+
+### Management Scripts
+```bash
+# Start daemon
+./scripts/start-daemon.sh
+
+# Check status  
+./scripts/status.sh
+
+# Stop daemon
+./scripts/stop-daemon.sh
+```
+
+### Q CLI Configuration
+Add to `~/.aws/amazonq/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "web-search": {
+      "transport": "http",
+      "url": "http://127.0.0.1:8090/mcp/",
+      "timeout": 5000,
+      "fallback": {
+        "command": "/Users/guvishl/.mcp/web-search/start.sh",
+        "args": [],
+        "timeout": 120000
+      }
+    }
+  }
+}
+```
 
 ## Installation
 
