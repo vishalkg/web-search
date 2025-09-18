@@ -13,7 +13,7 @@ packages = [{include = "websearch", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastmcp = "^0.1.0"
+fastmcp = "^2.12.0"
 requests = "^2.31.0"
 beautifulsoup4 = "^4.12.0"
 aiohttp = "^3.9.0"
