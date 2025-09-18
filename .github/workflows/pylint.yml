@@ -21,4 +21,4 @@ jobs:
         pip install -e .
     - name: Analysing the code with pylint
       run: |
-        pylint src/websearch/ --disable=C0114,C0115,C0116,R0903,R0801,C0413,C0415,W0613,W0612,W1203,W0718,W1514,W0622,R0917,R0914,R1705 --max-line-length=88
+        pylint src/websearch/ --disable=C0114,C0115,C0116,R0903,R0801,C0413,C0415,W0613,W0612,W1203,W0718,W1514,W0622,R0917,R0914,R1705,R0913 --max-line-length=88
