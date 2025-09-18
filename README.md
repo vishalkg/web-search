@@ -1,113 +1,120 @@
-# Web Search MCP Server (Standalone)
+# WebSearch MCP Server
 
-A Model Context Protocol (MCP) server that provides web search capabilities using multiple search engines (DuckDuckGo, Bing, and Startpage) with parallel execution and result deduplication.
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+High-performance Model Context Protocol (MCP) server for web search and content extraction with async architecture.
 
-- **Multi-engine search**: Searches DuckDuckGo, Bing, and Startpage simultaneously
-- **Parallel execution**: All searches run concurrently for faster results
-- **Result deduplication**: Removes duplicate URLs from combined results
-- **Source attribution**: Shows which search engine provided each result
-- **Comprehensive logging**: Logs all operations to `web-search.log`
-- **Standalone**: Pre-configured virtual environment included - no setup required
-- **Two tools available**:
-  - `SearchWeb`: Multi-engine web search
-  - `FetchPageContent`: Extract text content from web pages
+## ✨ Features
 
-## Installation
+- **🚀 Fast**: Async implementation for optimal performance
+- **🔍 Multi-Engine**: DuckDuckGo, Bing, Startpage with parallel execution  
+- **📄 Content Extraction**: Clean text extraction from web pages
+- **💾 Smart Caching**: LRU cache with compression
+- **🛡️ Resilient**: Automatic fallbacks and comprehensive error handling
 
-### Option 1: Standalone (Pre-configured venv included)
+## 🚀 Quick Start
 
-1. **Extract the files**:
-   ```bash
-   unzip web-search-mcp.zip -d ~/.mcp/
-   ```
+```bash
+# Install from GitHub
+git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
+cd ~/.mcp
+python3 -m venv venv
+source venv/bin/activate
+cd web-search
+pip install -e .
+chmod +x start.sh
 
-2. **Make start script executable**:
-   ```bash
-   chmod +x ~/.mcp/web-search/start.sh
-   ```
+# Add to Q CLI
+q mcp add websearch ~/.mcp/web-search/start.sh
 
-3. **Add to Q CLI MCP configuration**:
-   ```bash
-   q mcp add web-search ~/.mcp/web-search/start.sh
-   ```
-
-4. **Verify installation and test**:
-   ```bash
-   q mcp status --name web-search
-   q chat
-   # In chat: "search web for python libraries"
-   ```
-
-### Option 2: Manual Setup (If venv is missing)
-
-1. **Navigate to the directory**:
-   ```bash
-   cd ~/.mcp/web-search
-   ```
-
-2. **Create virtual environment**:
-   ```bash
-   python3 -m venv venv
-   ```
-
-3. **Activate virtual environment and install dependencies**:
-   ```bash
-   source venv/bin/activate
-   pip install -r requirements.txt
-   deactivate
-   ```
-
-4. **Make start script executable**:
-   ```bash
-   chmod +x start.sh
-   ```
-
-5. **Add to Q CLI MCP configuration**:
-   ```bash
-   q mcp add web-search ~/.mcp/web-search/start.sh
-   ```
-
-6. **Test the installation**:
-   ```bash
-   q mcp status --name web-search
-   ```
-
-## Files Included
-
-- `server.py` - Main MCP server code
-- `start.sh` - Startup script  
-- `requirements.txt` - Python dependencies
-- `venv/` - Pre-configured virtual environment with all dependencies
-- `README.md` - This documentation
-
-## Usage
-
-Start a new Q CLI chat session. The server provides two tools:
-
-### SearchWeb
-```
-Search query: "python web scraping libraries"
+# Test
+q chat
+# Try: "search web for python tutorials"
 ```
 
-### FetchPageContent  
+## 📦 Installation
+
+### From GitHub (Recommended)
+```bash
+git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
+cd ~/.mcp
+python3 -m venv venv
+source venv/bin/activate
+cd web-search
+pip install -e .
+chmod +x start.sh
+q mcp add websearch ~/.mcp/web-search/start.sh
 ```
-Fetch content from: "https://example.com"
+
+### Manual Setup
+```bash
+# If you already have the files
+cd ~/.mcp/web-search
+python3 -m venv venv
+source venv/bin/activate
+pip install -e .
+chmod +x start.sh
+q mcp add websearch ~/.mcp/web-search/start.sh
 ```
 
-## Logs
+## 🔧 Usage
 
-All operations are logged to `web-search.log` in the server directory with timestamps and detailed information about search requests and results.
+The server provides two main tools:
 
-## Troubleshooting
+### Search Web
+```python
+# Multi-engine web search
+search_web("quantum computing applications", num_results=10)
+```
 
-- **Permission denied**: Ensure `start.sh` is executable (`chmod +x start.sh`)
-- **No search results**: Check the log file for error messages
-- **Debugging**: Check `web-search.log` for detailed debugging information
+### Fetch Page Content  
+```python
+# Extract clean text from URLs
+fetch_page_content("https://example.com")
+fetch_page_content(["https://site1.com", "https://site2.com"])  # Batch processing
+```
 
-## Requirements
+## 🏗️ Architecture
 
-- Q CLI with MCP support
-- Internet connection for web searches
-- macOS/Linux (Python 3.11+ included in venv)
+```
+websearch/
+├── core/           # Search logic (sync + async)
+├── engines/        # Search engine implementations  
+├── utils/          # Caching, HTTP, utilities
+└── server.py       # FastMCP server
+```
+
+## 🔧 Configuration
+
+Set environment variables for customization:
+```bash
+export WEBSEARCH_CACHE_SIZE=1000
+export WEBSEARCH_TIMEOUT=10
+export WEBSEARCH_LOG_LEVEL=INFO
+```
+
+## 🐛 Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| No results | Check internet connection and logs |
+| Permission denied | `chmod +x start.sh` |
+| Import errors | Ensure Python 3.12+ and dependencies installed |
+
+## 📈 Monitoring
+
+Logs are written to `web-search.log` with structured format for debugging and monitoring.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Run tests (`pytest`)
+4. Commit changes (`git commit -m 'Add amazing feature'`)
+5. Push to branch (`git push origin feature/amazing-feature`)
+6. Open Pull Request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
