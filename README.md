@@ -50,6 +50,29 @@ Add to `~/.aws/amazonq/mcp.json`:
 
 ## Installation
 
+### Pip Install (Recommended)
+```bash
+pip install git+https://github.com/yourusername/websearch-mcp.git
+```
+
+### Q CLI Configuration
+Add to `~/.aws/amazonq/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "web-search": {
+      "command": "/path/to/your/python",
+      "args": ["-m", "websearch.server", "--daemon"]
+    }
+  }
+}
+```
+
+**Find your Python path:**
+```bash
+which python  # Use this path in mcp.json
+```
+
 ### Option 1: Standalone (Pre-configured venv included)
 
 1. **Extract the files**:
