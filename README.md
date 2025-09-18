@@ -15,6 +15,7 @@ High-performance Model Context Protocol (MCP) server for web search and content 
 
 ## 🚀 Quick Start
 
+### Q CLI
 ```bash
 # Install from GitHub
 git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
@@ -33,9 +34,18 @@ q chat
 # Try: "search web for python tutorials"
 ```
 
+### Claude Desktop
+```bash
+# Install and configure (see detailed instructions below)
+git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
+# Configure claude_desktop_config.json
+# Restart Claude Desktop
+# Look for 🔨 MCP indicator
+```
+
 ## 📦 Installation
 
-### From GitHub (Recommended)
+### For Q CLI (Recommended)
 ```bash
 git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
 cd ~/.mcp
@@ -47,16 +57,51 @@ chmod +x start.sh
 q mcp add websearch ~/.mcp/web-search/start.sh
 ```
 
-### Manual Setup
+### For Claude Desktop
 ```bash
-# If you already have the files
+# 1. Install the server
+git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
 cd ~/.mcp/web-search
 python3 -m venv venv
 source venv/bin/activate
 pip install -e .
-chmod +x start.sh
-q mcp add websearch ~/.mcp/web-search/start.sh
+
+# 2. Configure Claude Desktop
+# Open Claude Desktop → Settings → Developer → Edit Config
+# Add this to your claude_desktop_config.json:
 ```
+
+**macOS Configuration:**
+```json
+{
+  "mcpServers": {
+    "websearch": {
+      "command": "/Users/YOUR_USERNAME/.mcp/web-search/venv/bin/python",
+      "args": ["-m", "websearch.server"],
+      "cwd": "/Users/YOUR_USERNAME/.mcp/web-search"
+    }
+  }
+}
+```
+
+**Windows Configuration:**
+```json
+{
+  "mcpServers": {
+    "websearch": {
+      "command": "C:\\Users\\YOUR_USERNAME\\.mcp\\web-search\\venv\\Scripts\\python.exe",
+      "args": ["-m", "websearch.server"],
+      "cwd": "C:\\Users\\YOUR_USERNAME\\.mcp\\web-search"
+    }
+  }
+}
+```
+
+**After configuration:**
+1. Replace `YOUR_USERNAME` with your actual username
+2. Restart Claude Desktop completely
+3. Look for the 🔨 MCP indicator in the chat input
+4. Try: "search web for python tutorials"
 
 ## 🔧 Usage
 
