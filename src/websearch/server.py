@@ -167,10 +167,10 @@ def main():
     
     # Check for transport argument
     if len(sys.argv) > 1 and sys.argv[1] == '--http':
-        logger.info("Starting server with HTTP transport on port 8080")
-        mcp.run(transport='http', host='127.0.0.1', port=8080)
+        logger.info("Starting server with HTTP transport on port 8090")
+        mcp.run(transport='http', host='127.0.0.1', port=8090)
     elif len(sys.argv) > 1 and sys.argv[1] == '--daemon':
-        logger.info("Starting server in daemon mode with HTTP transport on port 8080")
+        logger.info("Starting server in daemon mode with HTTP transport on port 8090")
         from .daemon import DaemonManager
         from .connection_manager import connection_manager
         
@@ -187,7 +187,7 @@ def main():
             """Start server with connection management."""
             await connection_manager.start()
             try:
-                await mcp.run_async(transport='http', host='127.0.0.1', port=8080)
+                await mcp.run_async(transport='http', host='127.0.0.1', port=8090)
             finally:
                 await connection_manager.stop()
                 daemon.cleanup()
