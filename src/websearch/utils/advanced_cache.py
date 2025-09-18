@@ -11,7 +11,9 @@ from typing import Any, Optional
 class LRUCache:
     """Thread-safe LRU cache with TTL and compression support"""
 
-    def __init__(self, max_size: int = 1000, ttl_seconds: int = 300, compress: bool = True):
+    def __init__(
+        self, max_size: int = 1000, ttl_seconds: int = 300, compress: bool = True
+    ):
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
         self.compress = compress
@@ -59,7 +61,9 @@ class LRUCache:
     def clear_expired(self) -> int:
         """Clear expired entries and return count removed"""
         with self.lock:
-            expired_keys = [key for key, entry in self.cache.items() if self._is_expired(entry)]
+            expired_keys = [
+                key for key, entry in self.cache.items() if self._is_expired(entry)
+            ]
             for key in expired_keys:
                 del self.cache[key]
             return len(expired_keys)
@@ -70,7 +74,8 @@ class LRUCache:
             return {
                 "size": len(self.cache),
                 "max_size": self.max_size,
-                "hit_rate": getattr(self, "_hits", 0) / max(getattr(self, "_requests", 1), 1),
+                "hit_rate": getattr(self, "_hits", 0)
+                / max(getattr(self, "_requests", 1), 1),
                 "compression_enabled": self.compress,
             }
 
