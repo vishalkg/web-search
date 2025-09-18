@@ -171,7 +171,34 @@ def main():
         mcp.run(transport='http', host='127.0.0.1', port=8080)
     elif len(sys.argv) > 1 and sys.argv[1] == '--daemon':
         logger.info("Starting server in daemon mode with HTTP transport on port 8080")
-        mcp.run(transport='http', host='127.0.0.1', port=8080)
+        from .daemon import DaemonManager
+        from .connection_manager import connection_manager
+        
+        daemon = DaemonManager()
+        
+        if daemon.is_running():
+            logger.error("Daemon already running")
+            sys.exit(1)
+        
+        daemon.setup_signal_handlers()
+        daemon.write_pid()
+        
+        async def start_with_connection_manager():
+            """Start server with connection management."""
+            await connection_manager.start()
+            try:
+                await mcp.run_async(transport='http', host='127.0.0.1', port=8080)
+            finally:
+                await connection_manager.stop()
+                daemon.cleanup()
+        
+        try:
+            import asyncio
+            asyncio.run(start_with_connection_manager())
+        except KeyboardInterrupt:
+            logger.info("Received interrupt signal")
+        finally:
+            daemon.cleanup()
     else:
         logger.info("Starting server with stdio transport (default)")
         mcp.run()
