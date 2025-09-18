@@ -4,7 +4,8 @@ import logging
 from typing import Any, Callable, Dict, List
 
 from bs4 import BeautifulSoup
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
+from requests.exceptions import (ConnectionError, HTTPError, RequestException,
+                                 Timeout)
 
 from ..utils.http import make_request
 

@@ -2,20 +2,25 @@
 """Async integration tests for web search functionality."""
 
 import asyncio
-import sys
-import os
-import pytest
 import json
+import os
+import sys
 import time
 from unittest.mock import patch
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+import pytest
 
-from websearch.engines.async_search import async_search_duckduckgo, async_search_bing, async_search_startpage
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from websearch.core.async_search import async_search_web
 from websearch.core.content import fetch_single_page_content
-from websearch.utils.cache import search_cache, content_cache, SimpleCache
+from websearch.engines.async_search import (
+    async_search_bing,
+    async_search_duckduckgo,
+    async_search_startpage,
+)
+from websearch.utils.cache import SimpleCache, content_cache, search_cache
 
 
 class TestAsyncWebSearchIntegration:
@@ -30,7 +35,7 @@ class TestAsyncWebSearchIntegration:
     async def test_async_search_duckduckgo_real(self):
         """Test real async DuckDuckGo search"""
         results = await async_search_duckduckgo("python", 3)
-        
+
         assert isinstance(results, list)
         if results:  # If we got results
             result = results[0]
@@ -46,7 +51,7 @@ class TestAsyncWebSearchIntegration:
     async def test_async_search_bing_real(self):
         """Test real async Bing search"""
         results = await async_search_bing("python", 3)
-        
+
         assert isinstance(results, list)
         if results:  # If we got results
             result = results[0]
@@ -62,7 +67,7 @@ class TestAsyncWebSearchIntegration:
     async def test_async_search_startpage_real(self):
         """Test real async Startpage search"""
         results = await async_search_startpage("python", 3)
-        
+
         assert isinstance(results, list)
         if results:  # If we got results
             result = results[0]
@@ -78,7 +83,7 @@ class TestAsyncWebSearchIntegration:
     async def test_async_ranking_preserved(self):
         """Test that ranking is preserved per engine"""
         results = await async_search_duckduckgo("python programming", 5)
-        
+
         if len(results) >= 2:
             # Check that ranks are sequential
             for i, result in enumerate(results):
@@ -89,12 +94,12 @@ class TestAsyncWebSearchIntegration:
         url = "https://httpbin.org/html"
         result_json = fetch_single_page_content(url)
         result = json.loads(result_json)
-        
+
         assert "success" in result
         assert "url" in result
         assert "timestamp" in result
         assert "cached" in result
-        
+
         if result["success"]:
             assert "content" in result
             assert "content_length" in result
@@ -105,7 +110,7 @@ class TestAsyncWebSearchIntegration:
         url = "https://httpbin.org/html"
         result_json = fetch_single_page_content(url)
         result = json.loads(result_json)
-        
+
         # Should return single page result, not batch format
         assert "success" in result
         assert "url" in result
@@ -115,12 +120,12 @@ class TestAsyncWebSearchIntegration:
         """Test batch fetch logic with multiple URLs"""
         import threading
         from datetime import datetime
-        
+
         urls = ["https://httpbin.org/html", "https://httpbin.org/json"]
         results = []
         threads = []
         thread_results = {}
-        
+
         def fetch_url_thread(url_to_fetch: str, index: int):
             try:
                 result_json = fetch_single_page_content(url_to_fetch)
@@ -133,22 +138,22 @@ class TestAsyncWebSearchIntegration:
                     "timestamp": datetime.utcnow().isoformat() + "Z",
                     "cached": False,
                 }
-        
+
         # Start threads for parallel fetching
         for i, url_to_fetch in enumerate(urls):
             thread = threading.Thread(target=fetch_url_thread, args=(url_to_fetch, i))
             thread.start()
             threads.append(thread)
-        
+
         # Wait for all threads to complete
         for thread in threads:
             thread.join(timeout=25)
-        
+
         # Collect results in order
         for i in range(len(urls)):
             if i in thread_results:
                 results.append(thread_results[i])
-        
+
         # Should have results for both URLs
         assert len(results) == 2
         for result in results:
@@ -158,15 +163,15 @@ class TestAsyncWebSearchIntegration:
     def test_content_caching(self):
         """Test that content caching works"""
         url = "https://httpbin.org/html"
-        
+
         # First fetch
         result1_json = fetch_single_page_content(url)
         result1 = json.loads(result1_json)
-        
+
         # Second fetch should be cached
         result2_json = fetch_single_page_content(url)
         result2 = json.loads(result2_json)
-        
+
         # Both should succeed
         if result1["success"] and result2["success"]:
             # Content should be identical
@@ -177,13 +182,13 @@ class TestAsyncWebSearchIntegration:
         """Test full async web search integration"""
         result_json = await async_search_web("python programming", 5)
         result = json.loads(result_json)
-        
+
         assert "query" in result
         assert "total_results" in result
         assert "sources" in result
         assert "results" in result
         assert "cached" in result
-        
+
         assert result["query"] == "python programming"
         assert isinstance(result["results"], list)
         assert len(result["results"]) <= 5
@@ -192,11 +197,11 @@ class TestAsyncWebSearchIntegration:
     async def test_async_concurrent_searches(self):
         """Test multiple concurrent async searches"""
         queries = ["python", "javascript", "rust"]
-        
+
         # Run searches concurrently
         tasks = [async_search_web(f"{query} tutorial", 2) for query in queries]
         results = await asyncio.gather(*tasks)
-        
+
         assert len(results) == 3
         for result_json in results:
             result = json.loads(result_json)
@@ -209,14 +214,14 @@ class TestAsyncWebSearchIntegration:
         # First search
         result1_json = await async_search_web("python caching test", 3)
         result1 = json.loads(result1_json)
-        
+
         # Second search should be cached
         result2_json = await async_search_web("python caching test", 3)
         result2 = json.loads(result2_json)
-        
+
         # Second result should be marked as cached
         assert result2["cached"] is True
-        
+
         # Results should be identical
         result1["cached"] = True  # Normalize for comparison
         assert result1 == result2
@@ -235,7 +240,7 @@ class TestCachingFunctionality:
         # Test set and get
         search_cache.set("test_key", {"data": "test_value"})
         result = search_cache.get("test_key")
-        
+
         assert result is not None
         assert result["data"] == "test_value"
 
@@ -243,16 +248,16 @@ class TestCachingFunctionality:
         """Test cache expiration"""
         # Create cache with very short TTL
         short_cache = SimpleCache(ttl_seconds=1)
-        
+
         short_cache.set("test_key", {"data": "test_value"})
-        
+
         # Should be available immediately
         result = short_cache.get("test_key")
         assert result is not None
-        
+
         # Wait for expiration
         time.sleep(1.1)
-        
+
         # Should be expired
         result = short_cache.get("test_key")
         assert result is None
@@ -260,17 +265,17 @@ class TestCachingFunctionality:
     def test_cache_cleanup(self):
         """Test cache cleanup functionality"""
         short_cache = SimpleCache(ttl_seconds=1)
-        
+
         # Add some entries
         short_cache.set("key1", "value1")
         short_cache.set("key2", "value2")
-        
+
         # Wait for expiration
         time.sleep(1.1)
-        
+
         # Clear expired entries
         short_cache.clear_expired()
-        
+
         # Cache should be empty
         assert len(short_cache.cache) == 0
 
@@ -281,38 +286,49 @@ class TestMockedFunctionality:
     def test_deduplication_logic(self):
         """Test URL deduplication works correctly"""
         # Mock all search functions to return overlapping results
-        with patch('websearch.engines.async_search.async_search_duckduckgo') as mock_ddg, \
-             patch('websearch.engines.async_search.async_search_bing') as mock_bing, \
-             patch('websearch.engines.async_search.async_search_startpage') as mock_sp:
-            
+        with (
+            patch("websearch.engines.async_search.async_search_duckduckgo") as mock_ddg,
+            patch("websearch.engines.async_search.async_search_bing") as mock_bing,
+            patch("websearch.engines.async_search.async_search_startpage") as mock_sp,
+        ):
+
             duplicate_url = "https://example.com"
-            mock_ddg.return_value = [{
-                "title": "DDG Result",
-                "url": duplicate_url,
-                "snippet": "DDG snippet",
-                "source": "DuckDuckGo",
-                "rank": 1
-            }]
-            mock_bing.return_value = [{
-                "title": "Bing Result",
-                "url": duplicate_url,
-                "snippet": "Bing snippet", 
-                "source": "Bing",
-                "rank": 1
-            }]
-            mock_sp.return_value = [{
-                "title": "SP Result",
-                "url": "https://different.com",
-                "snippet": "SP snippet",
-                "source": "Startpage",
-                "rank": 1
-            }]
-            
+            mock_ddg.return_value = [
+                {
+                    "title": "DDG Result",
+                    "url": duplicate_url,
+                    "snippet": "DDG snippet",
+                    "source": "DuckDuckGo",
+                    "rank": 1,
+                }
+            ]
+            mock_bing.return_value = [
+                {
+                    "title": "Bing Result",
+                    "url": duplicate_url,
+                    "snippet": "Bing snippet",
+                    "source": "Bing",
+                    "rank": 1,
+                }
+            ]
+            mock_sp.return_value = [
+                {
+                    "title": "SP Result",
+                    "url": "https://different.com",
+                    "snippet": "SP snippet",
+                    "source": "Startpage",
+                    "rank": 1,
+                }
+            ]
+
             # Test the deduplication logic manually
             from websearch.core.common import deduplicate_results
-            all_results = mock_ddg.return_value + mock_bing.return_value + mock_sp.return_value
+
+            all_results = (
+                mock_ddg.return_value + mock_bing.return_value + mock_sp.return_value
+            )
             unique_results = deduplicate_results(all_results, 10)
-            
+
             # Should have 2 unique URLs
             assert len(unique_results) == 2
             urls = [r["url"] for r in unique_results]
@@ -322,25 +338,28 @@ class TestMockedFunctionality:
     def test_error_handling(self):
         """Test error handling in page fetch"""
         from datetime import datetime
+
         import requests
-        
+
         result = {
             "url": "https://nonexistent.example",
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.utcnow().isoformat() + "Z",
         }
-        
+
         # Simulate request error
         try:
             raise requests.RequestException("Connection failed")
         except requests.RequestException as e:
-            result.update({
-                "success": False,
-                "content": None,
-                "content_length": 0,
-                "truncated": False,
-                "error": f"Request error: {str(e)}"
-            })
-        
+            result.update(
+                {
+                    "success": False,
+                    "content": None,
+                    "content_length": 0,
+                    "truncated": False,
+                    "error": f"Request error: {str(e)}",
+                }
+            )
+
         assert result["success"] is False
         assert "Connection failed" in result["error"]
         assert result["content"] is None
@@ -349,12 +368,15 @@ class TestMockedFunctionality:
         """Test error handling in batch fetch logic"""
         import threading
         from datetime import datetime
-        
-        urls = ["https://httpbin.org/html", "https://invalid-url-that-does-not-exist.com"]
+
+        urls = [
+            "https://httpbin.org/html",
+            "https://invalid-url-that-does-not-exist.com",
+        ]
         results = []
         threads = []
         thread_results = {}
-        
+
         def fetch_url_thread(url_to_fetch: str, index: int):
             try:
                 result_json = fetch_single_page_content(url_to_fetch)
@@ -367,33 +389,33 @@ class TestMockedFunctionality:
                     "timestamp": datetime.utcnow().isoformat() + "Z",
                     "cached": False,
                 }
-        
+
         # Start threads for parallel fetching
         for i, url_to_fetch in enumerate(urls):
             thread = threading.Thread(target=fetch_url_thread, args=(url_to_fetch, i))
             thread.start()
             threads.append(thread)
-        
+
         # Wait for all threads to complete
         for thread in threads:
             thread.join(timeout=25)
-        
+
         # Collect results in order
         for i in range(len(urls)):
             if i in thread_results:
                 results.append(thread_results[i])
-        
+
         # Should have results for both URLs
         assert len(results) == 2
-        
+
         # Should have at least one success and one failure
         success_count = sum(1 for r in results if r.get("success", False))
         failure_count = sum(1 for r in results if not r.get("success", False))
-        
+
         assert success_count >= 0
         assert failure_count >= 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Running async integration tests...")
-    pytest.main([__file__, '-v'])
+    pytest.main([__file__, "-v"])
