@@ -27,6 +27,7 @@ def format_search_response(
     ddg_results: List[Dict[str, Any]],
     bing_results: List[Dict[str, Any]],
     startpage_results: List[Dict[str, Any]],
+    google_results: List[Dict[str, Any]],
     num_results: int,
     cached: bool = False,
 ) -> str:
@@ -41,12 +42,13 @@ def format_search_response(
 
     logger.info(
         f"🔍 Input results - DDG: {len(ddg_results)}, "
-        f"Bing: {len(bing_results)}, Startpage: {len(startpage_results)}"
+        f"Bing: {len(bing_results)}, Startpage: {len(startpage_results)}, "
+        f"Google: {len(google_results)}"
     )
 
     # Apply quality-first ranking algorithm
     ranked_results = quality_first_ranking(
-        ddg_results, bing_results, startpage_results, num_results
+        ddg_results, bing_results, startpage_results, google_results, num_results
     )
 
     # Get engine distribution for monitoring
@@ -74,6 +76,7 @@ def format_search_response(
             "DuckDuckGo": len(ddg_results),
             "Bing": len(bing_results),
             "Startpage": len(startpage_results),
+            "Google": len(google_results),
         },
         "engine_distribution": distribution,
         "results": ranked_results,

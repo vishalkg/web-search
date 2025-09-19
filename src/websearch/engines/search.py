@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from urllib.parse import quote_plus
 
 from .base import search_engine_base
+from .google_api import search_google_api
 from .parsers import (parse_bing_results, parse_duckduckgo_results,
                       parse_startpage_results)
 
@@ -28,3 +29,8 @@ def search_bing(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search Bing"""
     url = f"https://www.bing.com/search?q={quote_plus(query)}"
     return search_engine_base(url, parse_bing_results, "Bing", query, num_results)
+
+
+def search_google(query: str, num_results: int) -> List[Dict[str, Any]]:
+    """Search Google via API"""
+    return search_google_api(query, num_results)

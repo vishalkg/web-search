@@ -10,6 +10,7 @@ def quality_first_ranking(
     ddg_results: List[Dict[str, Any]],
     bing_results: List[Dict[str, Any]],
     startpage_results: List[Dict[str, Any]],
+    google_results: List[Dict[str, Any]],
     num_results: int
 ) -> List[Dict[str, Any]]:
     """
@@ -41,14 +42,16 @@ def quality_first_ranking(
     ddg_prepared = prepare_engine_results(ddg_results, "duckduckgo")
     bing_prepared = prepare_engine_results(bing_results, "bing")
     startpage_prepared = prepare_engine_results(startpage_results, "startpage")
+    google_prepared = prepare_engine_results(google_results, "google")
 
     logger.info(
         f"Candidate pool: DDG={len(ddg_prepared)}, "
-        f"Bing={len(bing_prepared)}, Startpage={len(startpage_prepared)}"
+        f"Bing={len(bing_prepared)}, Startpage={len(startpage_prepared)}, "
+        f"Google={len(google_prepared)}"
     )
 
     # Combine all candidates
-    all_candidates = ddg_prepared + bing_prepared + startpage_prepared
+    all_candidates = ddg_prepared + bing_prepared + startpage_prepared + google_prepared
 
     # Deduplicate keeping highest quality version
     deduped = _deduplicate_by_quality(all_candidates)
