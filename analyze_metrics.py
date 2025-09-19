@@ -1,64 +1,106 @@
 #!/usr/bin/env python3
-"""Analyze search engine selection metrics."""
+"""Analyze search engine selection metrics and compare with LLM responses."""
 
 import json
-import os
-from collections import defaultdict, Counter
+import sys
+from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
+
 
 def analyze_metrics(days=7):
-    """Analyze search engine selection patterns."""
-    metrics_file = os.path.join("src/websearch/search-metrics.jsonl")
+    """Analyze search responses vs LLM selections."""
+    metrics_file = Path("src/websearch/search-metrics.jsonl")
     
-    if not os.path.exists(metrics_file):
+    if not metrics_file.exists():
         print("No metrics file found. Start using the search to collect data.")
         return
     
-    selections = []
-    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    cutoff_date = datetime.now().replace(tzinfo=None) - timedelta(days=days)
     
-    try:
-        with open(metrics_file, 'r') as f:
-            for line in f:
-                event = json.loads(line.strip())
-                event_time = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
+    search_responses = []
+    url_selections = []
+    
+    # Parse metrics file
+    with open(metrics_file, 'r') as f:
+        for line in f:
+            try:
+                data = json.loads(line.strip())
+                timestamp = datetime.fromisoformat(data['timestamp'].replace('Z', '').replace('+00:00', ''))
                 
-                if event_time >= cutoff_date and event['event_type'] == 'url_selection':
-                    selections.extend(event['selections'])
+                if timestamp < cutoff_date:
+                    continue
+                
+                if data.get('event_type') == 'search_response':
+                    search_responses.append(data)
+                elif data.get('event_type') == 'url_selection':
+                    url_selections.append(data)
+                    
+            except (json.JSONDecodeError, KeyError, ValueError):
+                continue
     
-    except Exception as e:
-        print(f"Error reading metrics: {e}")
+    print(f"\n🔍 Search Response vs LLM Selection Analysis (Last {days} days)")
+    print("=" * 60)
+    
+    if not search_responses and not url_selections:
+        print("No data found in the specified time range.")
         return
     
-    if not selections:
-        print("No selection data found in the specified time period.")
-        return
-    
-    # Analyze engine performance
-    engine_stats = Counter()
-    search_sessions = set()
-    
-    for selection in selections:
-        engine = selection['engine']
-        search_id = selection['search_id']
+    # Analyze search responses
+    if search_responses:
+        print(f"\n📤 Search Responses Sent to LLM: {len(search_responses)}")
         
-        engine_stats[engine] += 1
-        search_sessions.add(search_id)
+        total_results_sent = sum(r['total_results'] for r in search_responses)
+        engine_sent = defaultdict(int)
+        
+        for response in search_responses:
+            for engine, count in response['engine_distribution'].items():
+                engine_sent[engine] += count
+        
+        print(f"Total results sent to LLM: {total_results_sent}")
+        print("Engine distribution in responses:")
+        for engine, count in sorted(engine_sent.items()):
+            percentage = (count / total_results_sent * 100) if total_results_sent > 0 else 0
+            print(f"  {engine.upper():12}: {count:3d} results ({percentage:5.1f}%)")
     
-    total_selections = sum(engine_stats.values())
+    # Analyze URL selections
+    if url_selections:
+        print(f"\n📥 LLM URL Selections: {len(url_selections)}")
+        
+        total_selections = 0
+        engine_selected = defaultdict(int)
+        
+        for selection in url_selections:
+            for sel in selection.get('selections', []):
+                total_selections += 1
+                engine_selected[sel['engine']] += 1
+        
+        print(f"Total URLs selected by LLM: {total_selections}")
+        print("Engine distribution in selections:")
+        for engine, count in sorted(engine_selected.items()):
+            percentage = (count / total_selections * 100) if total_selections > 0 else 0
+            print(f"  {engine.upper():12}: {count:3d} selections ({percentage:5.1f}%)")
     
-    print(f"\n🔍 Search Engine Selection Analysis (Last {days} days)")
-    print("=" * 50)
-    print(f"Total URL selections: {total_selections}")
-    print(f"Unique search sessions: {len(search_sessions)}")
-    print(f"Average selections per search: {total_selections / max(len(search_sessions), 1):.1f}")
-    
-    print(f"\n📊 Engine Performance:")
-    for engine, count in engine_stats.most_common():
-        percentage = (count / total_selections) * 100
-        print(f"  {engine.upper():<12}: {count:>3} selections ({percentage:>5.1f}%)")
-    
-    print(f"\n🏆 Winner: {engine_stats.most_common(1)[0][0].upper()} with {engine_stats.most_common(1)[0][1]} selections")
+    # Compare if we have both
+    if search_responses and url_selections:
+        print(f"\n📊 Response vs Selection Comparison:")
+        print("-" * 40)
+        
+        for engine in set(list(engine_sent.keys()) + list(engine_selected.keys())):
+            sent = engine_sent.get(engine, 0)
+            selected = engine_selected.get(engine, 0)
+            
+            sent_pct = (sent / total_results_sent * 100) if total_results_sent > 0 else 0
+            selected_pct = (selected / total_selections * 100) if total_selections > 0 else 0
+            
+            print(f"{engine.upper():12}: {sent_pct:5.1f}% sent → {selected_pct:5.1f}% selected")
+        
+        # Selection rate
+        if total_results_sent > 0:
+            selection_rate = (total_selections / total_results_sent * 100)
+            print(f"\nOverall selection rate: {selection_rate:.1f}% ({total_selections}/{total_results_sent})")
+
 
 if __name__ == "__main__":
-    analyze_metrics()
+    days = int(sys.argv[1]) if len(sys.argv) > 1 else 7
+    analyze_metrics(days)
