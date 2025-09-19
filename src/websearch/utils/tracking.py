@@ -4,13 +4,50 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 
 # Engine code mapping
 ENGINE_CODES = {"ddg": "d", "bing": "b", "startpage": "s"}
+
+
+def log_search_response(search_query: str, results: List[Dict], search_id: str) -> None:
+    """Log search response sent to LLM for comparison with selections"""
+    metrics_file = os.path.join(os.path.dirname(__file__), "..", "search-metrics.jsonl")
+
+    # Get engine distribution
+    distribution = {"duckduckgo": 0, "bing": 0, "startpage": 0, "unknown": 0}
+    for result in results:
+        engine = result.get("source", "unknown")
+        distribution[engine] = distribution.get(engine, 0) + 1
+
+    response_data = {
+        "event_type": "search_response",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "search_id": search_id,
+        "query": search_query,
+        "total_results": len(results),
+        "engine_distribution": distribution,
+        "results": [
+            {
+                "rank": i + 1,
+                "title": result.get("title", ""),
+                "url": result.get("url", ""),
+                "source": result.get("source", "unknown"),
+                "quality_score": result.get("quality_score", 0)
+            }
+            for i, result in enumerate(results)
+        ]
+    }
+
+    try:
+        with open(metrics_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(response_data) + "\n")
+        logger.info(f"📤 Logged search response: {search_id} ({len(results)} results)")
+    except Exception as e:
+        logger.error(f"Failed to log search response: {e}")
 
 
 def add_tracking_to_url(url: str, engine: str, search_id: str) -> str:
