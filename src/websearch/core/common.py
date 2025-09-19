@@ -37,11 +37,16 @@ def format_search_response(
     search_id = generate_search_id()
     logger.info(f"🔍 Generated search_id: {search_id}")
 
-    logger.info(f"🔍 Input results - DDG: {len(ddg_results)}, Bing: {len(bing_results)}, Startpage: {len(startpage_results)}")
+    logger.info(
+        f"🔍 Input results - DDG: {len(ddg_results)}, "
+        f"Bing: {len(bing_results)}, Startpage: {len(startpage_results)}"
+    )
 
     # Apply quality-first ranking algorithm
-    ranked_results = quality_first_ranking(ddg_results, bing_results, startpage_results, num_results)
-    
+    ranked_results = quality_first_ranking(
+        ddg_results, bing_results, startpage_results, num_results
+    )
+
     # Get engine distribution for monitoring
     distribution = get_engine_distribution(ranked_results)
     logger.info(f"🔍 Engine distribution: {distribution}")
@@ -52,7 +57,10 @@ def format_search_response(
         original_url = result["url"]
         tracked_url = add_tracking_to_url(original_url, engine, search_id)
         result["url"] = tracked_url
-        logger.info(f"🔍 Result {i+1} - Engine: {engine}, Quality: {result['quality_score']:.1f}")
+        logger.info(
+            f"🔍 Result {i+1} - Engine: {engine}, "
+            f"Quality: {result['quality_score']:.1f}"
+        )
 
     response = {
         "query": search_query,
