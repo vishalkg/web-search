@@ -13,6 +13,34 @@ from .parsers import (parse_bing_results, parse_duckduckgo_results,
 
 logger = logging.getLogger(__name__)
 
+# Rate limiting: minimum delay between requests per engine
+RATE_LIMITS = {
+    'duckduckgo': 2.0,  # 2 seconds between requests
+    'bing': 1.5,        # 1.5 seconds between requests  
+    'startpage': 3.0,   # 3 seconds between requests (most strict)
+}
+
+# Track last request time per engine
+_last_request_time = {}
+
+
+async def _rate_limit_delay(engine_name: str) -> None:
+    """Apply rate limiting delay for engine"""
+    if engine_name not in RATE_LIMITS:
+        return
+
+    current_time = asyncio.get_event_loop().time()
+    last_time = _last_request_time.get(engine_name, 0)
+    min_delay = RATE_LIMITS[engine_name]
+
+    time_since_last = current_time - last_time
+    if time_since_last < min_delay:
+        delay = min_delay - time_since_last
+        logger.info(f"Rate limiting {engine_name}: waiting {delay:.1f}s")
+        await asyncio.sleep(delay)
+
+    _last_request_time[engine_name] = asyncio.get_event_loop().time()
+
 
 async def async_search_engine_base(
     url: str, parser_func, source_name: str, query: str, num_results: int
@@ -42,6 +70,7 @@ async def async_search_engine_base(
 
 async def async_search_duckduckgo(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search DuckDuckGo"""
+    await _rate_limit_delay('duckduckgo')
     url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
     return await async_search_engine_base(
         url, parse_duckduckgo_results, "DuckDuckGo", query, num_results
@@ -50,6 +79,7 @@ async def async_search_duckduckgo(query: str, num_results: int) -> List[Dict[str
 
 async def async_search_bing(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Bing"""
+    await _rate_limit_delay('bing')
     url = f"https://www.bing.com/search?q={quote_plus(query)}"
     return await async_search_engine_base(
         url, parse_bing_results, "Bing", query, num_results
@@ -58,6 +88,7 @@ async def async_search_bing(query: str, num_results: int) -> List[Dict[str, Any]
 
 async def async_search_startpage(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Startpage"""
+    await _rate_limit_delay('startpage')
     url = f"https://www.startpage.com/sp/search?query={quote_plus(query)}"
     return await async_search_engine_base(
         url, parse_startpage_results, "Startpage", query, num_results
