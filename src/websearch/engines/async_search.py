@@ -33,10 +33,10 @@ async def _rate_limit_delay(engine_name: str) -> None:
     current_time = asyncio.get_event_loop().time()
     last_time = _last_request_time.get(engine_name, 0)
     min_delay, max_delay = RATE_LIMITS[engine_name]
-    
+
     # Random delay between min and max
     random_delay = random.uniform(min_delay, max_delay)
-    
+
     time_since_last = current_time - last_time
     if time_since_last < random_delay:
         delay = random_delay - time_since_last
