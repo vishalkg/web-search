@@ -19,7 +19,7 @@ class GoogleQuotaManager:
         """Load quota data from file."""
         if not QUOTA_FILE.exists():
             return {"date": None, "used": 0}
-        
+
         try:
             with open(QUOTA_FILE, "r") as f:
                 return json.load(f)
@@ -42,19 +42,27 @@ class GoogleQuotaManager:
     def can_make_request(self) -> bool:
         """Check if we can make a request within quota."""
         if self._is_new_day():
-            self._quota_data = {"date": datetime.now(timezone.utc).date().isoformat(), "used": 0}
+            self._quota_data = {
+                "date": datetime.now(timezone.utc).date().isoformat(),
+                "used": 0
+            }
             self._save_quota()
-        
+
         return self._quota_data["used"] < DAILY_LIMIT
 
     def record_request(self):
         """Record a successful API request."""
         if self._is_new_day():
-            self._quota_data = {"date": datetime.now(timezone.utc).date().isoformat(), "used": 0}
-        
+            self._quota_data = {
+                "date": datetime.now(timezone.utc).date().isoformat(),
+                "used": 0
+            }
+
         self._quota_data["used"] += 1
         self._save_quota()
-        logger.info(f"Google API quota used: {self._quota_data['used']}/{DAILY_LIMIT}")
+        logger.info(
+            f"Google API quota used: {self._quota_data['used']}/{DAILY_LIMIT}"
+        )
 
     def get_remaining(self) -> int:
         """Get remaining quota for today."""

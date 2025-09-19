@@ -53,13 +53,14 @@ async def async_search_web(search_query: str, num_results: int = 10) -> str:
     cleanup_expired_cache()
 
     # Perform async parallel searches
-    ddg_results, bing_results, startpage_results, google_results = await async_parallel_search(
-        search_query, num_results
+    ddg_results, bing_results, startpage_results, google_results = (
+        await async_parallel_search(search_query, num_results)
     )
 
     # Format response
     response_json = format_search_response(
-        search_query, ddg_results, bing_results, startpage_results, google_results, num_results
+        search_query, ddg_results, bing_results, startpage_results,
+        google_results, num_results
     )
 
     # Cache the result

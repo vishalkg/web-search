@@ -20,13 +20,14 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     if not API_KEY or not CSE_ID:
         logger.warning("Google API key or CSE ID not configured")
         return []
-        
+
     if not quota_manager.can_make_request():
         logger.warning("Google API quota exhausted for today")
         return []
 
     try:
         service = build("customsearch", "v1", developerKey=API_KEY)
+        # pylint: disable=no-member
         result = service.cse().list(
             q=query,
             cx=CSE_ID,
@@ -34,7 +35,7 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         ).execute()
 
         quota_manager.record_request()
-        
+
         results = []
         for item in result.get("items", []):
             results.append({

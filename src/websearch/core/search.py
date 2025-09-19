@@ -4,7 +4,9 @@ import json
 import logging
 import threading
 
-from ..engines.search import search_bing, search_duckduckgo, search_google, search_startpage
+from ..engines.search import (
+    search_bing, search_duckduckgo, search_google, search_startpage
+)
 from .common import (cache_search_result, cleanup_expired_cache,
                      format_search_response, get_cached_search_result,
                      log_search_completion)
@@ -58,13 +60,14 @@ def search_web(search_query: str, num_results: int = 10) -> str:
     cleanup_expired_cache()
 
     # Perform parallel searches
-    ddg_results, bing_results, startpage_results, google_results = parallel_search(
-        search_query, num_results
+    ddg_results, bing_results, startpage_results, google_results = (
+        parallel_search(search_query, num_results)
     )
 
     # Format response
     response_json = format_search_response(
-        search_query, ddg_results, bing_results, startpage_results, google_results, num_results
+        search_query, ddg_results, bing_results, startpage_results,
+        google_results, num_results
     )
 
     # Cache the result
