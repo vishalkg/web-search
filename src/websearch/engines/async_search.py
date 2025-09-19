@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import random
 from typing import Any, Dict, List
 from urllib.parse import quote_plus
 
@@ -13,11 +14,11 @@ from .parsers import (parse_bing_results, parse_duckduckgo_results,
 
 logger = logging.getLogger(__name__)
 
-# Rate limiting: minimum delay between requests per engine
+# Rate limiting: base delay + random jitter (min, max) seconds
 RATE_LIMITS = {
-    'duckduckgo': 2.0,  # 2 seconds between requests
-    'bing': 1.5,        # 1.5 seconds between requests  
-    'startpage': 3.0,   # 3 seconds between requests (most strict)
+    'duckduckgo': (1.5, 3.0),  # 1.5-3.0s random delay
+    'bing': (1.0, 2.5),        # 1.0-2.5s random delay
+    'startpage': (2.0, 4.0),   # 2.0-4.0s random delay
 }
 
 # Track last request time per engine
@@ -25,17 +26,20 @@ _last_request_time = {}
 
 
 async def _rate_limit_delay(engine_name: str) -> None:
-    """Apply rate limiting delay for engine"""
+    """Apply rate limiting delay with random jitter"""
     if engine_name not in RATE_LIMITS:
         return
 
     current_time = asyncio.get_event_loop().time()
     last_time = _last_request_time.get(engine_name, 0)
-    min_delay = RATE_LIMITS[engine_name]
-
+    min_delay, max_delay = RATE_LIMITS[engine_name]
+    
+    # Random delay between min and max
+    random_delay = random.uniform(min_delay, max_delay)
+    
     time_since_last = current_time - last_time
-    if time_since_last < min_delay:
-        delay = min_delay - time_since_last
+    if time_since_last < random_delay:
+        delay = random_delay - time_since_last
         logger.info(f"Rate limiting {engine_name}: waiting {delay:.1f}s")
         await asyncio.sleep(delay)
 
