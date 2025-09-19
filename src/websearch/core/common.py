@@ -31,7 +31,9 @@ def format_search_response(
     cached: bool = False,
 ) -> str:
     """Format the final search response with optimized ranking and tracking"""
-    from ..utils.tracking import add_tracking_to_url, generate_search_id
+    from ..utils.tracking import (
+        add_tracking_to_url, generate_search_id, log_search_response
+    )
 
     # Generate search ID for tracking
     search_id = generate_search_id()
@@ -50,6 +52,9 @@ def format_search_response(
     # Get engine distribution for monitoring
     distribution = get_engine_distribution(ranked_results)
     logger.info(f"🔍 Engine distribution: {distribution}")
+
+    # Log search response before adding tracking URLs
+    log_search_response(search_query, ranked_results, search_id)
 
     # Add tracking to final results
     for i, result in enumerate(ranked_results):
