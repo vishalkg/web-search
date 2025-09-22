@@ -23,9 +23,9 @@ except ImportError:
     logging.warning("python-dotenv not installed, skipping .env file loading")
 
 from . import __version__
-from .core.async_search import async_search_web
+from .core.async_search import async_search_web_fallback as async_search_web
 from .core.content import fetch_single_page_content
-from .core.search import search_web as sync_search_web
+from .core.search import search_web_fallback as sync_search_web
 
 # Setup logging
 log_file = os.path.join(os.path.dirname(__file__), "web-search.log")
@@ -44,11 +44,15 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
 @mcp.tool(
     name="search_web",
     description=(
-        "Search across multiple search engines (DuckDuckGo, Bing, Startpage) with "
-        "intelligent caching and parallel processing. Returns comprehensive results "
-        "with titles, URLs, and snippets from multiple sources.\n\n"
+        "Search across multiple search engines (DuckDuckGo, Bing, Startpage, Google, Brave) "
+        "with intelligent 3-engine fallback system and parallel processing. Returns comprehensive "
+        "results with titles, URLs, and snippets from multiple sources.\n\n"
+        "Fallback System:\n"
+        "• Google API → Startpage fallback (if quota exhausted)\n"
+        "• Bing → DuckDuckGo fallback (if blocked/failed)\n"
+        "• Brave API (standalone)\n\n"
         "Features:\n"
-        "• Multi-engine search with result aggregation\n"
+        "• 3-engine fallback with result aggregation\n"
         "• Intelligent caching for improved performance\n"
         "• Parallel execution for optimal speed\n"
         "• Comprehensive error handling and retry logic\n"
