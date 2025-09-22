@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.websearch.engines.brave_api import search_brave_api
-from src.websearch.utils.brave_quota import quota_manager
+from src.websearch.utils.unified_quota import unified_quota
 
 def test_brave_api():
     """Test Brave API with real key."""
@@ -19,10 +19,10 @@ def test_brave_api():
     print("🔍 Testing Brave Search API...")
     
     # Check quota status
-    usage = quota_manager.get_usage()
+    usage = unified_quota.get_usage("brave")
     print(f"📊 Quota status: {usage['used']}/{usage['limit']} used this month")
     
-    if not quota_manager.can_make_request():
+    if not unified_quota.can_make_request("brave"):
         print("❌ Quota exhausted - cannot make request")
         return
     
@@ -37,7 +37,7 @@ def test_brave_api():
         print()
     
     # Check quota after request
-    usage = quota_manager.get_usage()
+    usage = unified_quota.get_usage("brave")
     print(f"📊 Updated quota: {usage['used']}/{usage['limit']} used this month")
 
 if __name__ == "__main__":

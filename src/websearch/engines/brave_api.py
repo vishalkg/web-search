@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 import requests
 
-from ..utils.brave_quota import quota_manager
+from ..utils.unified_quota import unified_quota
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         logger.warning("Brave API key not configured")
         return []
 
-    if not quota_manager.can_make_request():
+    if not unified_quota.can_make_request("brave"):
         logger.warning("Brave API quota exhausted for this month")
         return []
 
@@ -42,7 +42,7 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         )
         response.raise_for_status()
 
-        quota_manager.record_request()
+        unified_quota.record_request("brave")
 
         data = response.json()
         results = []

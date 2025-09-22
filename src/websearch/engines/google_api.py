@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from ..utils.quota import quota_manager
+from ..utils.unified_quota import unified_quota
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         logger.warning("Google API key or CSE ID not configured")
         return []
 
-    if not quota_manager.can_make_request():
+    if not unified_quota.can_make_request("google"):
         logger.warning("Google API quota exhausted for today")
         return []
 
@@ -34,7 +34,7 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
             num=min(num_results, 10)
         ).execute()
 
-        quota_manager.record_request()
+        unified_quota.record_request("google")
 
         results = []
         for item in result.get("items", []):
