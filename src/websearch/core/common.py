@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 
 from ..utils.advanced_cache import enhanced_search_cache
 from ..utils.cache import get_cache_key
-from .ranking import quality_first_ranking, get_engine_distribution
+from .ranking import quality_first_ranking, quality_first_ranking_fallback, get_engine_distribution
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,47 @@ def build_search_urls(query: str) -> Dict[str, str]:
         "bing": f"https://www.bing.com/search?q={encoded_query}",
         "startpage": f"https://www.startpage.com/sp/search?query={encoded_query}",
     }
+
+
+def format_fallback_search_response(
+    search_query: str,
+    google_startpage_results: List[Dict[str, Any]],
+    bing_ddg_results: List[Dict[str, Any]],
+    brave_results: List[Dict[str, Any]],
+    num_results: int,
+    cached: bool = False,
+) -> str:
+    """Format search response for 3-engine fallback system."""
+    logger.info(
+        f"🔍 Fallback results - Google/Startpage: {len(google_startpage_results)}, "
+        f"Bing/DDG: {len(bing_ddg_results)}, Brave: {len(brave_results)}"
+    )
+
+    # Apply quality-first ranking algorithm for 3 engines
+    ranked_results = quality_first_ranking_fallback(
+        google_startpage_results, bing_ddg_results, brave_results, num_results
+    )
+
+    # Calculate distribution
+    distribution = {}
+    for result in ranked_results:
+        source = result.get("source", "unknown").lower()
+        distribution[source] = distribution.get(source, 0) + 1
+
+    response = {
+        "query": search_query,
+        "total_results": len(ranked_results),
+        "sources": {
+            "Google/Startpage": len(google_startpage_results),
+            "Bing/DuckDuckGo": len(bing_ddg_results),
+            "Brave": len(brave_results),
+        },
+        "engine_distribution": distribution,
+        "results": ranked_results,
+        "cached": cached,
+    }
+
+    return json.dumps(response, indent=2)
 
 
 def format_search_response(

@@ -8,8 +8,9 @@ from ..engines.search import (
     search_bing, search_brave, search_duckduckgo, search_google, search_startpage
 )
 from .common import (cache_search_result, cleanup_expired_cache,
-                     format_search_response, get_cached_search_result,
-                     log_search_completion)
+                     format_search_response, format_fallback_search_response,
+                     get_cached_search_result, log_search_completion)
+from .fallback_search import fallback_parallel_search
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,45 @@ def parallel_search(query: str, num_results: int) -> tuple:
         results["ddg"], results["bing"], results["startpage"], 
         results["google"], results["brave"]
     )
+
+
+def search_web_fallback(search_query: str, num_results: int = 10) -> str:
+    """
+    Search the web using 3-engine fallback system.
+    
+    Fallback pairs:
+    - Google -> Startpage (if Google fails/quota exhausted)
+    - Bing -> DuckDuckGo (if Bing fails)  
+    - Brave (standalone)
+    """
+    # Check cache first
+    cached_result = get_cached_search_result(search_query, num_results)
+    if cached_result:
+        return cached_result
+
+    logger.info(f"🔍 Fallback search: '{search_query}' (limit: {num_results})")
+
+    # Perform fallback parallel searches
+    google_startpage_results, bing_ddg_results, brave_results = (
+        fallback_parallel_search(search_query, num_results)
+    )
+
+    # Format response for 3-engine fallback system
+    response_json = format_fallback_search_response(
+        search_query, google_startpage_results, bing_ddg_results, 
+        brave_results, num_results
+    )
+
+    # Cache and log
+    cache_search_result(search_query, num_results, response_json)
+    
+    # Parse response to get unique count for logging
+    import json
+    response_data = json.loads(response_json)
+    unique_count = response_data.get("total_results", 0)
+    log_search_completion(search_query, num_results, unique_count)
+
+    return response_json
 
 
 def search_web(search_query: str, num_results: int = 10) -> str:
