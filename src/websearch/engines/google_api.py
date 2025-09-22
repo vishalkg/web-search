@@ -11,12 +11,12 @@ from ..utils.unified_quota import unified_quota
 
 logger = logging.getLogger(__name__)
 
-API_KEY = os.getenv("GOOGLE_CSE_API_KEY")
-CSE_ID = os.getenv("GOOGLE_CSE_ID")
-
 
 def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search using Google Custom Search API."""
+    API_KEY = os.getenv("GOOGLE_CSE_API_KEY")
+    CSE_ID = os.getenv("GOOGLE_CSE_ID")
+    
     if not API_KEY or not CSE_ID:
         logger.warning("Google API key or CSE ID not configured")
         return []

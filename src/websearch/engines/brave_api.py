@@ -10,12 +10,13 @@ from ..utils.unified_quota import unified_quota
 
 logger = logging.getLogger(__name__)
 
-API_KEY = os.getenv("BRAVE_SEARCH_API_KEY")
 BASE_URL = "https://api.search.brave.com/res/v1/web/search"
 
 
 def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search using Brave Search API."""
+    API_KEY = os.getenv("BRAVE_SEARCH_API_KEY")
+    
     if not API_KEY:
         logger.warning("Brave API key not configured")
         return []

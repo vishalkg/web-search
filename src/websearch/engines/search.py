@@ -1,7 +1,18 @@
 """Search engine implementations."""
 
+import os
+from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import quote_plus
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # python-dotenv not installed
 
 from .base import search_engine_base
 from .brave_api import search_brave_api
