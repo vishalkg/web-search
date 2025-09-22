@@ -28,6 +28,7 @@ def format_search_response(
     bing_results: List[Dict[str, Any]],
     startpage_results: List[Dict[str, Any]],
     google_results: List[Dict[str, Any]],
+    brave_results: List[Dict[str, Any]],
     num_results: int,
     cached: bool = False,
 ) -> str:
@@ -43,12 +44,13 @@ def format_search_response(
     logger.info(
         f"🔍 Input results - DDG: {len(ddg_results)}, "
         f"Bing: {len(bing_results)}, Startpage: {len(startpage_results)}, "
-        f"Google: {len(google_results)}"
+        f"Google: {len(google_results)}, Brave: {len(brave_results)}"
     )
 
     # Apply quality-first ranking algorithm
     ranked_results = quality_first_ranking(
-        ddg_results, bing_results, startpage_results, google_results, num_results
+        ddg_results, bing_results, startpage_results, google_results,
+        brave_results, num_results
     )
 
     # Get engine distribution for monitoring
@@ -77,6 +79,7 @@ def format_search_response(
             "Bing": len(bing_results),
             "Startpage": len(startpage_results),
             "Google": len(google_results),
+            "Brave": len(brave_results),
         },
         "engine_distribution": distribution,
         "results": ranked_results,

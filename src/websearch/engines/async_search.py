@@ -9,6 +9,7 @@ from urllib.parse import quote_plus
 import aiohttp
 from bs4 import BeautifulSoup
 
+from .brave_api import async_search_brave_api
 from .google_api import async_search_google_api
 from .parsers import (parse_bing_results, parse_duckduckgo_results,
                       parse_startpage_results)
@@ -103,3 +104,8 @@ async def async_search_startpage(query: str, num_results: int) -> List[Dict[str,
 async def async_search_google(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Google API"""
     return await async_search_google_api(query, num_results)
+
+
+async def async_search_brave(query: str, num_results: int) -> List[Dict[str, Any]]:
+    """Async search Brave API"""
+    return await async_search_brave_api(query, num_results)

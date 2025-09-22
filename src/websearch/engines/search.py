@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from urllib.parse import quote_plus
 
 from .base import search_engine_base
+from .brave_api import search_brave_api
 from .google_api import search_google_api
 from .parsers import (parse_bing_results, parse_duckduckgo_results,
                       parse_startpage_results)
@@ -34,3 +35,8 @@ def search_bing(query: str, num_results: int) -> List[Dict[str, Any]]:
 def search_google(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search Google via API"""
     return search_google_api(query, num_results)
+
+
+def search_brave(query: str, num_results: int) -> List[Dict[str, Any]]:
+    """Search Brave via API"""
+    return search_brave_api(query, num_results)
