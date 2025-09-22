@@ -29,7 +29,7 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
             "X-Subscription-Token": API_KEY,
             "Accept": "application/json"
         }
-        
+
         params = {
             "q": query,
             "count": min(num_results, 20),
@@ -37,14 +37,16 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
             "search_lang": "en"
         }
 
-        response = requests.get(BASE_URL, headers=headers, params=params, timeout=5)
+        response = requests.get(
+            BASE_URL, headers=headers, params=params, timeout=5
+        )
         response.raise_for_status()
-        
+
         quota_manager.record_request()
-        
+
         data = response.json()
         results = []
-        
+
         web_results = data.get("web", {}).get("results", [])
         for item in web_results:
             results.append({

@@ -18,7 +18,7 @@ def quality_first_ranking_fallback(
     num_results: int
 ) -> List[Dict[str, Any]]:
     """Quality-first ranking for 3-engine fallback system."""
-    
+
     def prepare_engine_results(
         results: List[Dict[str, Any]], engine: str
     ) -> List[Dict[str, Any]]:
@@ -27,17 +27,21 @@ def quality_first_ranking_fallback(
         for i, result in enumerate(results):
             if not result.get("url") or not result.get("title"):
                 continue
-            
+
             prepared_result = result.copy()
             prepared_result["engine"] = engine
             prepared_result["engine_rank"] = i + 1
             prepared.append(prepared_result)
-        
+
         return prepared
 
     # Prepare results from all engines
-    google_startpage_prepared = prepare_engine_results(google_startpage_results, "fallback_primary")
-    bing_ddg_prepared = prepare_engine_results(bing_ddg_results, "fallback_secondary") 
+    google_startpage_prepared = prepare_engine_results(
+        google_startpage_results, "fallback_primary"
+    )
+    bing_ddg_prepared = prepare_engine_results(
+        bing_ddg_results, "fallback_secondary"
+    )
     brave_prepared = prepare_engine_results(brave_results, "brave")
 
     logger.info(
@@ -117,7 +121,7 @@ def quality_first_ranking(
 
     # Combine all candidates
     all_candidates = (
-        ddg_prepared + bing_prepared + startpage_prepared + 
+        ddg_prepared + bing_prepared + startpage_prepared +
         google_prepared + brave_prepared
     )
 

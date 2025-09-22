@@ -32,12 +32,18 @@ async def async_search_with_fallback(
             return []
 
 
-async def async_fallback_parallel_search(query: str, num_results: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+async def async_fallback_parallel_search(
+    query: str, num_results: int
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Perform async parallel searches with 3-engine fallback system."""
     # Create tasks for concurrent execution with fallbacks
     tasks = [
-        async_search_with_fallback(async_search_google, async_search_startpage, query, num_results),
-        async_search_with_fallback(async_search_bing, async_search_duckduckgo, query, num_results),
+        async_search_with_fallback(
+            async_search_google, async_search_startpage, query, num_results
+        ),
+        async_search_with_fallback(
+            async_search_bing, async_search_duckduckgo, query, num_results
+        ),
         async_search_brave(query, num_results),
     ]
 
@@ -45,8 +51,12 @@ async def async_fallback_parallel_search(query: str, num_results: int) -> Tuple[
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Handle any exceptions and return results
-    google_startpage_results = results[0] if not isinstance(results[0], Exception) else []
-    bing_ddg_results = results[1] if not isinstance(results[1], Exception) else []
+    google_startpage_results = (
+        results[0] if not isinstance(results[0], Exception) else []
+    )
+    bing_ddg_results = (
+        results[1] if not isinstance(results[1], Exception) else []
+    )
     brave_results = results[2] if not isinstance(results[2], Exception) else []
 
     return google_startpage_results, bing_ddg_results, brave_results

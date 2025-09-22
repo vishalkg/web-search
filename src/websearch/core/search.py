@@ -42,7 +42,7 @@ def parallel_search(query: str, num_results: int) -> tuple:
         thread.join(timeout=8)
 
     return (
-        results["ddg"], results["bing"], results["startpage"], 
+        results["ddg"], results["bing"], results["startpage"],
         results["google"], results["brave"]
     )
 
@@ -50,10 +50,10 @@ def parallel_search(query: str, num_results: int) -> tuple:
 def search_web_fallback(search_query: str, num_results: int = 10) -> str:
     """
     Search the web using 3-engine fallback system.
-    
+
     Fallback pairs:
     - Google -> Startpage (if Google fails/quota exhausted)
-    - Bing -> DuckDuckGo (if Bing fails)  
+    - Bing -> DuckDuckGo (if Bing fails)
     - Brave (standalone)
     """
     # Check cache first
@@ -70,15 +70,14 @@ def search_web_fallback(search_query: str, num_results: int = 10) -> str:
 
     # Format response for 3-engine fallback system
     response_json = format_fallback_search_response(
-        search_query, google_startpage_results, bing_ddg_results, 
+        search_query, google_startpage_results, bing_ddg_results,
         brave_results, num_results
     )
 
     # Cache and log
     cache_search_result(search_query, num_results, response_json)
-    
+
     # Parse response to get unique count for logging
-    import json
     response_data = json.loads(response_json)
     unique_count = response_data.get("total_results", 0)
     log_search_completion(search_query, num_results, unique_count)

@@ -14,7 +14,7 @@ QUOTA_FILE = Path.home() / ".websearch" / "brave_quota.json"
 
 class BraveQuotaManager:
     """Manages Brave API quota tracking."""
-    
+
     def __init__(self):
         QUOTA_FILE.parent.mkdir(exist_ok=True)
         self._quota_data = self._load_quota()

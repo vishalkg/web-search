@@ -42,7 +42,7 @@ async def async_parallel_search(query: str, num_results: int) -> tuple:
 async def async_search_web_fallback(search_query: str, num_results: int = 10) -> str:
     """
     Async search the web using 3-engine fallback system.
-    
+
     Fallback pairs:
     - Google -> Startpage (if Google fails/quota exhausted)
     - Bing -> DuckDuckGo (if Bing fails)
@@ -68,9 +68,8 @@ async def async_search_web_fallback(search_query: str, num_results: int = 10) ->
 
     # Cache and log
     cache_search_result(search_query, num_results, response_json)
-    
+
     # Parse response to get unique count for logging
-    import json
     response_data = json.loads(response_json)
     unique_count = response_data.get("total_results", 0)
     log_search_completion(search_query, num_results, unique_count, is_async=True)

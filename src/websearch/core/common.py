@@ -7,7 +7,8 @@ from urllib.parse import quote_plus
 
 from ..utils.advanced_cache import enhanced_search_cache
 from ..utils.cache import get_cache_key
-from .ranking import quality_first_ranking, quality_first_ranking_fallback, get_engine_distribution
+from .ranking import (quality_first_ranking, quality_first_ranking_fallback,
+                      get_engine_distribution)
 
 logger = logging.getLogger(__name__)
 

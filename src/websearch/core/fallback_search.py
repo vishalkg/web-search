@@ -11,7 +11,9 @@ from ..engines.search import (
 logger = logging.getLogger(__name__)
 
 
-def search_with_fallback(primary_func, fallback_func, query: str, num_results: int) -> List[Dict[str, Any]]:
+def search_with_fallback(
+    primary_func, fallback_func, query: str, num_results: int
+) -> List[Dict[str, Any]]:
     """Search with primary engine, fallback to secondary if primary fails."""
     try:
         results = primary_func(query, num_results)
@@ -29,7 +31,9 @@ def search_with_fallback(primary_func, fallback_func, query: str, num_results: i
             return []
 
 
-def fallback_parallel_search(query: str, num_results: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+def fallback_parallel_search(
+    query: str, num_results: int
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Perform parallel searches with 3-engine fallback system."""
     results = {"google_startpage": [], "bing_ddg": [], "brave": []}
     threads = []
@@ -39,8 +43,18 @@ def fallback_parallel_search(query: str, num_results: int) -> Tuple[List[Dict[st
 
     # Define search functions with fallbacks
     search_funcs = [
-        (lambda: search_with_fallback(search_google, search_startpage, query, num_results), "google_startpage"),
-        (lambda: search_with_fallback(search_bing, search_duckduckgo, query, num_results), "bing_ddg"),
+        (
+            lambda: search_with_fallback(
+                search_google, search_startpage, query, num_results
+            ),
+            "google_startpage",
+        ),
+        (
+            lambda: search_with_fallback(
+                search_bing, search_duckduckgo, query, num_results
+            ),
+            "bing_ddg",
+        ),
         (lambda: search_brave(query, num_results), "brave"),
     ]
 
