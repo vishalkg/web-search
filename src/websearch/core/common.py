@@ -32,6 +32,8 @@ def format_fallback_search_response(
     cached: bool = False,
 ) -> str:
     """Format search response for 3-engine fallback system."""
+    from ..utils.tracking import generate_search_id, log_search_response
+    
     logger.info(
         f"🔍 Fallback results - Google/Startpage: {len(google_startpage_results)}, "
         f"Bing/DDG: {len(bing_ddg_results)}, Brave: {len(brave_results)}"
@@ -41,6 +43,10 @@ def format_fallback_search_response(
     ranked_results = quality_first_ranking_fallback(
         google_startpage_results, bing_ddg_results, brave_results, num_results
     )
+
+    # Generate search ID and log response
+    search_id = generate_search_id()
+    log_search_response(search_query, ranked_results, search_id)
 
     # Calculate distribution
     distribution = {}
