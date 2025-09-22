@@ -7,9 +7,20 @@ import logging
 import os
 import threading
 from datetime import datetime
+from pathlib import Path
 from typing import List, Union
 
 from fastmcp import FastMCP
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+        logging.info(f"Loaded environment variables from {env_path}")
+except ImportError:
+    logging.warning("python-dotenv not installed, skipping .env file loading")
 
 from . import __version__
 from .core.async_search import async_search_web
