@@ -167,7 +167,7 @@ websearch/
 │   ├── duckduckgo.py          # DuckDuckGo scraping
 │   └── startpage.py           # Startpage scraping
 ├── utils/
-│   ├── brave_quota.py         # Brave API quota management
+│   ├── unified_quota.py       # Unified API quota management
 │   ├── deduplication.py       # Result deduplication
 │   ├── advanced_cache.py      # Enhanced caching system
 │   └── http.py                # HTTP utilities
@@ -183,14 +183,23 @@ export GOOGLE_CSE_API_KEY=your_google_api_key
 export GOOGLE_CSE_ID=your_google_cse_id  
 export BRAVE_SEARCH_API_KEY=your_brave_api_key
 
+# Quota Management (Optional)
+export GOOGLE_DAILY_QUOTA=100        # Default: 100 requests/day
+export BRAVE_MONTHLY_QUOTA=2000      # Default: 2000 requests/month
+
 # Performance Tuning
 export WEBSEARCH_CACHE_SIZE=1000
 export WEBSEARCH_TIMEOUT=10
 export WEBSEARCH_LOG_LEVEL=INFO
-
-# Quota Management
-export BRAVE_MONTHLY_QUOTA=2000  # Default quota limit
 ```
+
+### Quota Management
+- **Unified System**: Single quota manager for all APIs
+- **Google**: Daily quota (default 100 requests/day)
+- **Brave**: Monthly quota (default 2000 requests/month)
+- **Storage**: Quota files stored in `~/.websearch/` directory
+- **Auto-reset**: Quotas automatically reset at period boundaries
+- **Fallback**: Automatic fallback to scraping when quotas exhausted
 
 ### Search Modes
 - **Standard Mode**: Uses all 5 engines for maximum coverage
