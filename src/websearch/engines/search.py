@@ -1,6 +1,5 @@
 """Search engine implementations."""
 
-import os
 from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import quote_plus

@@ -14,10 +14,9 @@ logger = logging.getLogger(__name__)
 
 def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search using Google Custom Search API."""
-    API_KEY = os.getenv("GOOGLE_CSE_API_KEY")
-    CSE_ID = os.getenv("GOOGLE_CSE_ID")
-    
-    if not API_KEY or not CSE_ID:
+    api_key = os.getenv("GOOGLE_CSE_API_KEY")
+    cse_id = os.getenv("GOOGLE_CSE_ID")
+    if not api_key or not cse_id:
         logger.warning("Google API key or CSE ID not configured")
         return []
 
@@ -26,11 +25,11 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         return []
 
     try:
-        service = build("customsearch", "v1", developerKey=API_KEY)
+        service = build("customsearch", "v1", developerKey=api_key)
         # pylint: disable=no-member
         result = service.cse().list(
             q=query,
-            cx=CSE_ID,
+            cx=cse_id,
             num=min(num_results, 10)
         ).execute()
 

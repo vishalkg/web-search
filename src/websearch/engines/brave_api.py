@@ -15,9 +15,9 @@ BASE_URL = "https://api.search.brave.com/res/v1/web/search"
 
 def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search using Brave Search API."""
-    API_KEY = os.getenv("BRAVE_SEARCH_API_KEY")
-    
-    if not API_KEY:
+    api_key = os.getenv("BRAVE_SEARCH_API_KEY")
+
+    if not api_key:
         logger.warning("Brave API key not configured")
         return []
 
@@ -27,7 +27,7 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
 
     try:
         headers = {
-            "X-Subscription-Token": API_KEY,
+            "X-Subscription-Token": api_key,
             "Accept": "application/json"
         }
 

@@ -44,9 +44,10 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
 @mcp.tool(
     name="search_web",
     description=(
-        "Search across multiple search engines (DuckDuckGo, Bing, Startpage, Google, Brave) "
-        "with intelligent 3-engine fallback system and parallel processing. Returns comprehensive "
-        "results with titles, URLs, and snippets from multiple sources.\n\n"
+        "Search across multiple search engines (DuckDuckGo, Bing, Startpage, "
+        "Google, Brave) with intelligent 3-engine fallback system and parallel "
+        "processing. Returns comprehensive results with titles, URLs, and snippets "
+        "from multiple sources.\n\n"
         "Fallback System:\n"
         "• Google API → Startpage fallback (if quota exhausted)\n"
         "• Bing → DuckDuckGo fallback (if blocked/failed)\n"

@@ -33,7 +33,6 @@ def format_fallback_search_response(
 ) -> str:
     """Format search response for 3-engine fallback system."""
     from ..utils.tracking import generate_search_id, log_search_response
-    
     logger.info(
         f"🔍 Fallback results - Google/Startpage: {len(google_startpage_results)}, "
         f"Bing/DDG: {len(bing_ddg_results)}, Brave: {len(brave_results)}"
