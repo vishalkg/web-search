@@ -74,9 +74,11 @@ dmypy.json
 # Temporary files
 *.tmp
 *.temp
+
 # Metrics and logs
 search-metrics.jsonl
 web-search.log
+
 # Strategy and planning documents (local only)
 MCP_SERVER_OPTIMIZATION_STRATEGY.md
 E2E_TESTING_CHECKLIST.md
