@@ -3,12 +3,9 @@
 import logging
 from typing import Any, Dict, List
 
-logger = logging.getLogger(__name__)
+from ..utils.deduplication import deduplicate_results
 
-# Import deduplicate_results to avoid circular import
-def _import_deduplicate_results():
-    from .common import deduplicate_results
-    return deduplicate_results
+logger = logging.getLogger(__name__)
 
 
 def quality_first_ranking_fallback(
@@ -66,7 +63,6 @@ def quality_first_ranking_fallback(
         scored_candidates.append(candidate)
 
     # Deduplicate and rank
-    deduplicate_results = _import_deduplicate_results()
     final_results = deduplicate_results(scored_candidates, num_results)
 
     logger.info(f"🏆 Final fallback ranking: {len(final_results)} results")

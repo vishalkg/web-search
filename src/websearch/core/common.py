@@ -144,14 +144,6 @@ def get_cached_search_result(search_query: str, num_results: int) -> str | None:
     return None
 
 
-def deduplicate_results(
-    results: List[Dict[str, Any]], num_results: int
-) -> List[Dict[str, Any]]:
-    """Deduplicate results by URL, keeping the best ranked version."""
-    from .ranking import _deduplicate_by_quality
-    return _deduplicate_by_quality(results)[:num_results]
-
-
 def cache_search_result(
     search_query: str, num_results: int, response_data: Dict[str, Any]
 ) -> None:
