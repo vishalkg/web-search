@@ -23,7 +23,7 @@ def log_search_response(search_query: str, results: List[Dict], search_id: str) 
         "google": 0, "brave": 0, "unknown": 0
     }
     for result in results:
-        engine = result.get("source", "unknown")
+        engine = result.get("source", "unknown").lower()
         distribution[engine] = distribution.get(engine, 0) + 1
 
     response_data = {
