@@ -54,7 +54,7 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
                 "title": item.get("title", ""),
                 "url": item.get("url", ""),
                 "snippet": item.get("description", ""),
-                "source": "Brave"
+                "source": "brave"
             })
 
         logger.info(f"Brave API found {len(results)} results")

@@ -54,7 +54,7 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
                 "title": item.get("title", ""),
                 "url": item.get("link", ""),
                 "snippet": item.get("snippet", ""),
-                "source": "Google"
+                "source": "google"
             })
 
         logger.info(f"Google API found {len(results)} results")

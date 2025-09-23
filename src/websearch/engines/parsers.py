@@ -35,7 +35,7 @@ def parse_startpage_results(
                     "title": title,
                     "url": url_found,
                     "snippet": snippet,
-                    "source": "Startpage",
+                    "source": "startpage",
                     "rank": rank,
                 }
             )
@@ -72,7 +72,7 @@ def parse_duckduckgo_results(
                     "title": title,
                     "url": url_found,
                     "snippet": snippet,
-                    "source": "DuckDuckGo",
+                    "source": "duckduckgo",
                     "rank": rank,
                 }
             )
@@ -108,7 +108,7 @@ def parse_bing_results(soup: BeautifulSoup, num_results: int) -> List[Dict[str, 
                     "title": title,
                     "url": url_found,
                     "snippet": snippet,
-                    "source": "Bing",
+                    "source": "bing",
                     "rank": rank,
                 }
             )
