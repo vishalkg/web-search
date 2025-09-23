@@ -43,6 +43,13 @@ q chat "search for python tutorials"
 pip install git+https://github.com/vishalkg/web-search.git
 ```
 
+**💡 Recommended:** Use a virtual environment for isolation:
+```bash
+python -m venv ~/.websearch/venv
+source ~/.websearch/venv/bin/activate
+pip install git+https://github.com/vishalkg/web-search.git
+```
+
 ### Option 2: Development installation
 ```bash
 git clone https://github.com/vishalkg/web-search.git
