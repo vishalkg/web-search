@@ -6,7 +6,6 @@ import os
 import tempfile
 import threading
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Dict, Any
 
 from .paths import get_quota_dir

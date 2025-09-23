@@ -39,7 +39,7 @@ def ensure_directories():
         get_logs_dir(),
         get_quota_dir()
     ]
-    
+
     for directory in dirs:
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
 
@@ -64,11 +64,11 @@ def find_env_file() -> Path:
         get_config_dir() / '.env',  # User config
         Path.home() / '.websearch' / '.env',  # Legacy location
     ]
-    
+
     for env_file in candidates:
         if env_file.exists():
             return env_file
-    
+
     # Return default location for creation
     ensure_directories()
     return get_config_dir() / '.env'
