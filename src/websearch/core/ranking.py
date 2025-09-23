@@ -4,6 +4,10 @@ import logging
 from typing import Any, Dict, List
 
 from ..utils.deduplication import deduplicate_results
+from ..utils.smart_deduplication import (
+    SmartDeduplicator, is_smart_deduplication_enabled, 
+    is_comparison_mode_enabled, compare_deduplication_methods
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +66,21 @@ def quality_first_ranking_fallback(
         candidate["quality_score"] = score
         scored_candidates.append(candidate)
 
-    # Deduplicate and rank
-    final_results = deduplicate_results(scored_candidates, num_results)
+    # Choose deduplication method based on feature flag
+    if is_comparison_mode_enabled():
+        # Comparison mode: log both methods but use original
+        comparison = compare_deduplication_methods(scored_candidates, num_results)
+        logger.info(f"🔬 Deduplication comparison: {comparison}")
+        final_results = deduplicate_results(scored_candidates, num_results)
+    elif is_smart_deduplication_enabled():
+        # Use smart deduplication
+        smart_dedup = SmartDeduplicator()
+        final_results = smart_dedup.process_results(scored_candidates)[:num_results]
+        logger.info("🧠 Using smart deduplication")
+    else:
+        # Use original deduplication
+        final_results = deduplicate_results(scored_candidates, num_results)
+        logger.info("📝 Using original deduplication")
 
     logger.info(f"🏆 Final fallback ranking: {len(final_results)} results")
     return final_results
@@ -121,14 +138,26 @@ def quality_first_ranking(
         google_prepared + brave_prepared
     )
 
-    # Deduplicate keeping highest quality version
-    deduped = _deduplicate_by_quality(all_candidates)
-
-    # Sort by quality score (higher is better)
-    deduped.sort(key=lambda x: x["quality_score"], reverse=True)
-
-    # Return top results
-    final_results = deduped[:num_results]
+    # Choose deduplication method based on feature flag
+    if is_comparison_mode_enabled():
+        # Comparison mode: log both methods but use original
+        comparison = compare_deduplication_methods(all_candidates, num_results)
+        logger.info(f"🔬 5-Engine deduplication comparison: {comparison}")
+        # Use original method for comparison mode
+        deduped = _deduplicate_by_quality(all_candidates)
+        deduped.sort(key=lambda x: x["quality_score"], reverse=True)
+        final_results = deduped[:num_results]
+    elif is_smart_deduplication_enabled():
+        # Use smart deduplication
+        smart_dedup = SmartDeduplicator()
+        final_results = smart_dedup.process_results(all_candidates)[:num_results]
+        logger.info("🧠 Using smart deduplication for 5-engine ranking")
+    else:
+        # Use original deduplication
+        deduped = _deduplicate_by_quality(all_candidates)
+        deduped.sort(key=lambda x: x["quality_score"], reverse=True)
+        final_results = deduped[:num_results]
+        logger.info("📝 Using original deduplication for 5-engine ranking")
 
     logger.info(
         f"Quality ranking: {len(all_candidates)} candidates → "
