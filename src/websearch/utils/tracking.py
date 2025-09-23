@@ -17,8 +17,11 @@ def log_search_response(search_query: str, results: List[Dict], search_id: str) 
     """Log search response sent to LLM for comparison with selections"""
     metrics_file = os.path.join(os.path.dirname(__file__), "..", "search-metrics.jsonl")
 
-    # Get engine distribution
-    distribution = {"duckduckgo": 0, "bing": 0, "startpage": 0, "unknown": 0}
+    # Get engine distribution - include all 5 engines
+    distribution = {
+        "duckduckgo": 0, "bing": 0, "startpage": 0, 
+        "google": 0, "brave": 0, "unknown": 0
+    }
     for result in results:
         engine = result.get("source", "unknown")
         distribution[engine] = distribution.get(engine, 0) + 1

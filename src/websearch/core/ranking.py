@@ -3,13 +3,78 @@
 import logging
 from typing import Any, Dict, List
 
+from ..utils.deduplication import deduplicate_results
+
 logger = logging.getLogger(__name__)
+
+
+def quality_first_ranking_fallback(
+    google_startpage_results: List[Dict[str, Any]],
+    bing_ddg_results: List[Dict[str, Any]],
+    brave_results: List[Dict[str, Any]],
+    num_results: int
+) -> List[Dict[str, Any]]:
+    """Quality-first ranking for 3-engine fallback system."""
+
+    def prepare_engine_results(
+        results: List[Dict[str, Any]], engine: str
+    ) -> List[Dict[str, Any]]:
+        """Prepare results from a single engine."""
+        prepared = []
+        for i, result in enumerate(results):
+            if not result.get("url") or not result.get("title"):
+                continue
+
+            prepared_result = result.copy()
+            prepared_result["engine"] = engine
+            prepared_result["engine_rank"] = i + 1
+            prepared.append(prepared_result)
+
+        return prepared
+
+    # Prepare results from all engines
+    google_startpage_prepared = prepare_engine_results(
+        google_startpage_results, "fallback_primary"
+    )
+    bing_ddg_prepared = prepare_engine_results(
+        bing_ddg_results, "fallback_secondary"
+    )
+    brave_prepared = prepare_engine_results(brave_results, "brave")
+
+    logger.info(
+        f"Fallback candidate pool: Google/Startpage={len(google_startpage_prepared)}, "
+        f"Bing/DDG={len(bing_ddg_prepared)}, Brave={len(brave_prepared)}"
+    )
+
+    # Combine all candidates
+    all_candidates = (
+        google_startpage_prepared + bing_ddg_prepared + brave_prepared
+    )
+
+    if not all_candidates:
+        logger.warning("No candidates from any engine")
+        return []
+
+    # Apply quality scoring and deduplication
+    scored_candidates = []
+    for candidate in all_candidates:
+        score = _calculate_quality_score(candidate, candidate.get("engine_rank", 1))
+        candidate["quality_score"] = score
+        scored_candidates.append(candidate)
+
+    # Deduplicate and rank
+    final_results = deduplicate_results(scored_candidates, num_results)
+
+    logger.info(f"🏆 Final fallback ranking: {len(final_results)} results")
+    return final_results
 
 
 def quality_first_ranking(
     ddg_results: List[Dict[str, Any]],
     bing_results: List[Dict[str, Any]],
     startpage_results: List[Dict[str, Any]],
+    google_results: List[Dict[str, Any]],
+    brave_results: List[Dict[str, Any]],
     num_results: int
 ) -> List[Dict[str, Any]]:
     """
@@ -41,14 +106,20 @@ def quality_first_ranking(
     ddg_prepared = prepare_engine_results(ddg_results, "duckduckgo")
     bing_prepared = prepare_engine_results(bing_results, "bing")
     startpage_prepared = prepare_engine_results(startpage_results, "startpage")
+    google_prepared = prepare_engine_results(google_results, "google")
+    brave_prepared = prepare_engine_results(brave_results, "brave")
 
     logger.info(
         f"Candidate pool: DDG={len(ddg_prepared)}, "
-        f"Bing={len(bing_prepared)}, Startpage={len(startpage_prepared)}"
+        f"Bing={len(bing_prepared)}, Startpage={len(startpage_prepared)}, "
+        f"Google={len(google_prepared)}, Brave={len(brave_prepared)}"
     )
 
     # Combine all candidates
-    all_candidates = ddg_prepared + bing_prepared + startpage_prepared
+    all_candidates = (
+        ddg_prepared + bing_prepared + startpage_prepared +
+        google_prepared + brave_prepared
+    )
 
     # Deduplicate keeping highest quality version
     deduped = _deduplicate_by_quality(all_candidates)

@@ -1,9 +1,21 @@
 """Search engine implementations."""
 
+from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import quote_plus
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # python-dotenv not installed
+
 from .base import search_engine_base
+from .brave_api import search_brave_api
+from .google_api import search_google_api
 from .parsers import (parse_bing_results, parse_duckduckgo_results,
                       parse_startpage_results)
 
@@ -28,3 +40,13 @@ def search_bing(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Search Bing"""
     url = f"https://www.bing.com/search?q={quote_plus(query)}"
     return search_engine_base(url, parse_bing_results, "Bing", query, num_results)
+
+
+def search_google(query: str, num_results: int) -> List[Dict[str, Any]]:
+    """Search Google via API"""
+    return search_google_api(query, num_results)
+
+
+def search_brave(query: str, num_results: int) -> List[Dict[str, Any]]:
+    """Search Brave via API"""
+    return search_brave_api(query, num_results)

@@ -21,8 +21,13 @@ def test_quality_first_ranking():
         {"url": "https://example4.com", "title": "Startpage Result", "snippet": "Startpage content"},
     ]
     
+    google_results = []
+    brave_results = []
+    
     # Test ranking
-    results = quality_first_ranking(ddg_results, bing_results, startpage_results, 5)
+    results = quality_first_ranking(
+        ddg_results, bing_results, startpage_results, google_results, brave_results, 5
+    )
     
     # Should have unique URLs only
     urls = [r["url"] for r in results]
@@ -63,8 +68,12 @@ def test_deduplication_keeps_best():
     ]
     
     startpage_results = []
+    google_results = []
+    brave_results = []
     
-    results = quality_first_ranking(ddg_results, bing_results, startpage_results, 5)
+    results = quality_first_ranking(
+        ddg_results, bing_results, startpage_results, google_results, brave_results, 5
+    )
     
     # Should only have one result (deduplicated)
     assert len(results) == 1
