@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from ..utils.deduplication import deduplicate_results
 from ..utils.smart_deduplication import (
-    SmartDeduplicator, is_smart_deduplication_enabled, 
+    SmartDeduplicator, is_smart_deduplication_enabled,
     is_comparison_mode_enabled, compare_deduplication_methods
 )
 
