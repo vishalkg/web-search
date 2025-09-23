@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+from .paths import get_metrics_file
+
 logger = logging.getLogger(__name__)
 
 # Engine code mapping
@@ -15,7 +17,7 @@ ENGINE_CODES = {"ddg": "d", "bing": "b", "startpage": "s"}
 
 def log_search_response(search_query: str, results: List[Dict], search_id: str) -> None:
     """Log search response sent to LLM for comparison with selections"""
-    metrics_file = os.path.join(os.path.dirname(__file__), "..", "search-metrics.jsonl")
+    metrics_file = get_metrics_file()
 
     # Get engine distribution - include all 5 engines
     distribution = {
@@ -92,7 +94,7 @@ def log_selection_metrics(urls: List[str]) -> None:
     if not urls:
         return
 
-    metrics_file = os.path.join(os.path.dirname(__file__), "../search-metrics.jsonl")
+    metrics_file = get_metrics_file()
 
     selections = []
     for url in urls:

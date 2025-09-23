@@ -33,6 +33,62 @@ chmod +x start.sh
 q mcp add websearch ~/.mcp/web-search/start.sh
 
 # Test
+q chat "search for python tutorials"
+```
+
+## 📦 Installation Options
+
+### Option 1: Direct install from GitHub (Recommended)
+```bash
+# Basic installation (DuckDuckGo, Bing, Startpage)
+pip install git+https://github.com/vishalkg/web-search.git
+
+# With Google API support  
+pip install "git+https://github.com/vishalkg/web-search.git[google]"
+
+# With all features
+pip install "git+https://github.com/vishalkg/web-search.git[all]"
+
+# Then run
+websearch-server
+```
+
+### Option 2: Development installation
+```bash
+git clone https://github.com/vishalkg/web-search.git
+cd web-search
+pip install -e .
+```
+
+### Option 3: Manual dependencies
+```bash
+git clone https://github.com/vishalkg/web-search.git
+cd web-search
+pip install -r requirements.txt
+```
+
+## 🗂️ File Structure (Installation Independent)
+
+The server automatically creates and manages files in user directories:
+
+```
+~/.websearch/                 # Base directory (configurable)
+├── config/
+│   └── .env                 # Configuration file
+├── data/
+│   ├── search-metrics.jsonl # Search analytics
+│   └── quota/              # API quota tracking
+│       ├── google_quota.json
+│       └── brave_quota.json
+├── logs/
+│   └── web-search.log      # Application logs
+└── cache/                  # Optional caching
+```
+
+### Environment Variable Overrides
+- `WEBSEARCH_HOME`: Base directory (default: `~/.websearch`)
+- `WEBSEARCH_CONFIG_DIR`: Config directory override  
+- `WEBSEARCH_LOG_DIR`: Log directory override
 q chat
 # Try: "search web for python tutorials"
 ```

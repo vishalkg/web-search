@@ -12,13 +12,17 @@ from typing import List, Union
 
 from fastmcp import FastMCP
 
+from .utils.paths import get_log_file, find_env_file
+
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
-    env_path = Path(__file__).parent.parent.parent / '.env'
-    if env_path.exists():
-        load_dotenv(env_path)
-        logging.info(f"Loaded environment variables from {env_path}")
+    env_file = find_env_file()
+    if env_file.exists():
+        load_dotenv(env_file)
+        logging.info(f"Loaded environment variables from {env_file}")
+    else:
+        logging.info("No .env file found, using system environment variables")
 except ImportError:
     logging.warning("python-dotenv not installed, skipping .env file loading")
 
@@ -28,7 +32,7 @@ from .core.content import fetch_single_page_content
 from .core.search import search_web_fallback as sync_search_web
 
 # Setup logging
-log_file = os.path.join(os.path.dirname(__file__), "web-search.log")
+log_file = get_log_file()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",

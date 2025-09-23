@@ -9,42 +9,29 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any
 
+from .paths import get_quota_dir
+
 logger = logging.getLogger(__name__)
 
 # Thread lock for file operations
 _quota_lock = threading.Lock()
 
 
-def _ensure_secure_directory():
-    """Create quota directory with secure permissions."""
-    quota_dir = Path.home() / ".websearch"
-    try:
-        quota_dir.mkdir(mode=0o700, exist_ok=True)
-        # Ensure directory has correct permissions
-        os.chmod(quota_dir, 0o700)
-        return quota_dir
-    except Exception as e:
-        logger.error(f"Failed to create secure quota directory: {e}")
-        return quota_dir
-
-
-QUOTA_DIR = _ensure_secure_directory()
-
-
 class UnifiedQuotaManager:
     """Unified quota manager for all search APIs."""
 
     def __init__(self):
+        self.quota_dir = get_quota_dir()
         self.configs = {
             "google": {
                 "limit": int(os.getenv("GOOGLE_DAILY_QUOTA", "100")),
                 "period": "daily",
-                "file": QUOTA_DIR / "google_quota.json"
+                "file": self.quota_dir / "google_quota.json"
             },
             "brave": {
                 "limit": int(os.getenv("BRAVE_MONTHLY_QUOTA", "2000")),
                 "period": "monthly",
-                "file": QUOTA_DIR / "brave_quota.json"
+                "file": self.quota_dir / "brave_quota.json"
             }
         }
 
