@@ -16,52 +16,47 @@ High-performance Model Context Protocol (MCP) server for web search and content 
 - **🔑 API Integration**: Google Custom Search, Brave Search APIs with quota management
 - **⚡ Resilient**: Automatic failover and comprehensive error handling
 
-## 🚀 Quick Start
+## 📦 Installation
+
+### Production Use (Recommended)
+```bash
+# Create virtual environment
+python -m venv ~/.websearch/venv
+source ~/.websearch/venv/bin/activate
+
+# Install from GitHub
+pip install git+https://github.com/vishalkg/web-search.git
+```
+
+### Development
+```bash
+git clone https://github.com/vishalkg/web-search.git
+cd web-search
+pip install -e .
+```
+
+## ⚙️ Configuration
 
 ### Q CLI
 ```bash
-# Install from GitHub
-git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
-cd ~/.mcp
-python3 -m venv venv
-source venv/bin/activate
-cd web-search
-pip install -e .
-chmod +x start.sh
-
-# Add to Q CLI
-q mcp add websearch ~/.mcp/web-search/start.sh
+# Add to Q CLI (after installation)
+q mcp add websearch ~/.websearch/venv/bin/websearch-server
 
 # Test
 q chat "search for python tutorials"
 ```
 
-## 📦 Installation Options
+### Claude Desktop
+Add to your MCP settings file:
 
-### Option 1: Direct install from GitHub (Recommended)
-```bash
-pip install git+https://github.com/vishalkg/web-search.git
-```
-
-**💡 Recommended:** Use a virtual environment for isolation:
-```bash
-python -m venv ~/.websearch/venv
-source ~/.websearch/venv/bin/activate
-pip install git+https://github.com/vishalkg/web-search.git
-```
-
-### Option 2: Development installation
-```bash
-git clone https://github.com/vishalkg/web-search.git
-cd web-search
-pip install -e .
-```
-
-### Option 3: Manual dependencies
-```bash
-git clone https://github.com/vishalkg/web-search.git
-cd web-search
-pip install -r requirements.txt
+```json
+{
+  "mcpServers": {
+    "websearch": {
+      "command": "~/.websearch/venv/bin/websearch-server"
+    }
+  }
+}
 ```
 
 ## 🗂️ File Structure (Installation Independent)
@@ -85,154 +80,8 @@ The server automatically creates and manages files in a unified user directory:
 
 ### Environment Variable Overrides
 - `WEBSEARCH_HOME`: Base directory (default: `~/.websearch`)
-- `WEBSEARCH_CONFIG_DIR`: Config directory override  
+- `WEBSEARCH_CONFIG_DIR`: Config directory override
 - `WEBSEARCH_LOG_DIR`: Log directory override
-
-## 🔑 API Configuration
-
-Create `.env` file with your API keys (optional - works without them):
-
-```bash
-# Create config file
-mkdir -p ~/.websearch/config
-cat > ~/.websearch/config/.env << 'EOF'
-# Google Custom Search API (optional)
-GOOGLE_CSE_API_KEY=your_google_api_key_here
-GOOGLE_CSE_ID=your_custom_search_engine_id
-
-# Brave Search API (optional)  
-BRAVE_API_KEY=your_brave_api_key_here
-
-# Quota limits (optional)
-GOOGLE_DAILY_QUOTA=100
-BRAVE_MONTHLY_QUOTA=2000
-EOF
-```
-
-**Without API keys**: Uses DuckDuckGo, Bing, and Startpage (3 engines)  
-**With API keys**: Uses all 5 engines including Google and Brave APIs
-
-**Advanced**: Place `.env` in current directory to override config for specific projects.
-
-## ⚙️ MCP Configuration
-
-### Recommended Setup (unified directory):
-```bash
-# Create everything in ~/.websearch/
-python -m venv ~/.websearch/venv
-source ~/.websearch/venv/bin/activate
-pip install git+https://github.com/vishalkg/web-search.git
-```
-
-### MCP Settings:
-```json
-{
-  "mcpServers": {
-    "websearch": {
-      "command": "~/.websearch/venv/bin/websearch-server"
-    }
-  }
-}
-```
-
-### Alternative (system/user install):
-```json
-{
-  "mcpServers": {
-    "websearch": {
-      "command": "websearch-server"
-    }
-  }
-}
-```
-q chat
-# Try: "search web for python tutorials"
-```
-
-### Claude Desktop
-```bash
-# Install and configure (see detailed instructions below)
-git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
-# Configure claude_desktop_config.json
-# Restart Claude Desktop
-# Look for 🔨 MCP indicator
-```
-
-## 🔧 Configuration
-
-### API Keys (Optional)
-For enhanced performance, configure API keys:
-
-```bash
-# Copy example environment file
-cp .env.example .env
-
-# Edit .env with your API keys
-GOOGLE_CSE_API_KEY=your_google_api_key_here
-GOOGLE_CSE_ID=your_google_cse_id_here
-BRAVE_SEARCH_API_KEY=your_brave_api_key_here
-```
-
-**Fallback Behavior:**
-- **Google API** → Falls back to **Startpage** scraping if quota exhausted
-- **Bing scraping** → Falls back to **DuckDuckGo** scraping if blocked
-- **Brave API** → Standalone with quota management
-
-## 📦 Installation
-cd ~/.mcp
-python3 -m venv venv
-source venv/bin/activate
-cd web-search
-pip install -e .
-chmod +x start.sh
-q mcp add websearch ~/.mcp/web-search/start.sh
-```
-
-### For Claude Desktop
-```bash
-# 1. Install the server
-git clone https://github.com/vishalkg/web-search.git ~/.mcp/web-search
-cd ~/.mcp/web-search
-python3 -m venv venv
-source venv/bin/activate
-pip install -e .
-
-# 2. Configure Claude Desktop
-# Open Claude Desktop → Settings → Developer → Edit Config
-# Add this to your claude_desktop_config.json:
-```
-
-**macOS Configuration:**
-```json
-{
-  "mcpServers": {
-    "websearch": {
-      "command": "/Users/YOUR_USERNAME/.mcp/web-search/venv/bin/python",
-      "args": ["-m", "websearch.server"],
-      "cwd": "/Users/YOUR_USERNAME/.mcp/web-search"
-    }
-  }
-}
-```
-
-**Windows Configuration:**
-```json
-{
-  "mcpServers": {
-    "websearch": {
-      "command": "C:\\Users\\YOUR_USERNAME\\.mcp\\web-search\\venv\\Scripts\\python.exe",
-      "args": ["-m", "websearch.server"],
-      "cwd": "C:\\Users\\YOUR_USERNAME\\.mcp\\web-search"
-    }
-  }
-}
-```
-
-**After configuration:**
-1. Replace `YOUR_USERNAME` with your actual username
-2. Restart Claude Desktop completely
-3. Look for the 🔨 MCP indicator in the chat input
-4. Try: "search web for python tutorials"
 
 ## 🔧 Usage
 
@@ -249,12 +98,12 @@ search_web_fallback("machine learning tutorials", num_results=5)
 
 **Search Engines:**
 - **Google Custom Search API** (with Startpage fallback)
-- **Bing** (with DuckDuckGo fallback) 
+- **Bing** (with DuckDuckGo fallback)
 - **Brave Search API** (standalone)
 - **DuckDuckGo** (scraping)
 - **Startpage** (scraping)
 
-### Fetch Page Content  
+### Fetch Page Content
 ```python
 # Extract clean text from URLs
 fetch_page_content("https://example.com")
@@ -267,7 +116,7 @@ fetch_page_content(["https://site1.com", "https://site2.com"])  # Batch processi
 websearch/
 ├── core/
 │   ├── search.py              # Sync search orchestration
-│   ├── async_search.py        # Async search orchestration  
+│   ├── async_search.py        # Async search orchestration
 │   ├── fallback_search.py     # 3-engine fallback system
 │   ├── async_fallback_search.py # Async fallback system
 │   ├── ranking.py             # Quality-first result ranking
@@ -292,7 +141,7 @@ websearch/
 ```bash
 # API Configuration
 export GOOGLE_CSE_API_KEY=your_google_api_key
-export GOOGLE_CSE_ID=your_google_cse_id  
+export GOOGLE_CSE_ID=your_google_cse_id
 export BRAVE_SEARCH_API_KEY=your_brave_api_key
 
 # Quota Management (Optional)
@@ -350,7 +199,7 @@ python test_fallback.py       # Test fallback system
 ### Metrics
 - **Pylint Score**: 10.00/10 (perfect code quality)
 - **Search Speed**: ~2-3 seconds for 5-engine search
-- **Fallback Speed**: ~1-2 seconds for 3-engine search  
+- **Fallback Speed**: ~1-2 seconds for 3-engine search
 - **Cache Hit Rate**: ~85% for repeated queries
 - **API Quota Efficiency**: Automatic fallback prevents service interruption
 
