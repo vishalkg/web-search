@@ -66,9 +66,6 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         else:
             logger.error(f"Google API HTTP error: {e}")
         return []
-    except Exception as e:
-        logger.error(f"Google API search failed: {e}")
-        return []
 
 
 async def async_search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
