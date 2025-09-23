@@ -40,7 +40,7 @@ pip install -e .
 ### Q CLI
 ```bash
 # Add to Q CLI (after installation)
-q mcp add websearch ~/.websearch/venv/bin/websearch-server
+q mcp add --name websearch --command ~/.websearch/venv/bin/websearch-server
 
 # Test
 q chat "search for python tutorials"
@@ -153,6 +153,19 @@ export WEBSEARCH_CACHE_SIZE=1000
 export WEBSEARCH_TIMEOUT=10
 export WEBSEARCH_LOG_LEVEL=INFO
 ```
+
+### How to Get API Keys
+
+#### Google Custom Search API
+1. **API Key**: Go to https://developers.google.com/custom-search/v1/introduction and click "Get a Key"
+2. **CSE ID**: Go to https://cse.google.com/cse/ and follow prompts to create a search engine
+
+#### Brave Search API
+1. Go to [Brave Search API](https://api.search.brave.com/)
+2. Sign up for a free account
+3. Go to your dashboard
+4. Copy the API key as `BRAVE_API_KEY`
+5. Free tier: 2000 requests/month
 
 ### Quota Management
 - **Unified System**: Single quota manager for all APIs
