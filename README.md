@@ -40,17 +40,7 @@ q chat "search for python tutorials"
 
 ### Option 1: Direct install from GitHub (Recommended)
 ```bash
-# Basic installation (DuckDuckGo, Bing, Startpage)
 pip install git+https://github.com/vishalkg/web-search.git
-
-# With Google API support  
-pip install "git+https://github.com/vishalkg/web-search.git[google]"
-
-# With all features
-pip install "git+https://github.com/vishalkg/web-search.git[all]"
-
-# Then run
-websearch-server
 ```
 
 ### Option 2: Development installation

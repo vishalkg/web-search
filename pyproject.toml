@@ -19,12 +19,6 @@ beautifulsoup4 = "^4.12.0"
 aiohttp = "^3.9.0"
 lxml = "^4.9.0"
 python-dotenv = "^1.0.0"
-
-[tool.poetry.extras]
-google = ["google-api-python-client"]
-all = ["google-api-python-client"]
-
-[tool.poetry.group.google.dependencies]
 google-api-python-client = "^2.0.0"
 
 [tool.poetry.group.dev.dependencies]
