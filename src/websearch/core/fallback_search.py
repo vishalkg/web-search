@@ -1,6 +1,7 @@
 """Fallback-based search orchestration with backward compatibility."""
 
 import logging
+import os
 import threading
 from typing import Any, Dict, List, Tuple
 
@@ -9,6 +10,9 @@ from ..engines.search import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Configurable timeout
+SEARCH_TIMEOUT = int(os.getenv("SEARCH_TIMEOUT", "8"))
 
 
 def search_with_fallback(
@@ -65,6 +69,6 @@ def fallback_parallel_search(
 
     # Wait for completion
     for thread in threads:
-        thread.join(timeout=8)
+        thread.join(timeout=SEARCH_TIMEOUT)
 
     return results["google_startpage"], results["bing_ddg"], results["brave"]
