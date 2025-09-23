@@ -69,10 +69,11 @@ pip install -r requirements.txt
 
 ## 🗂️ File Structure (Installation Independent)
 
-The server automatically creates and manages files in user directories:
+The server automatically creates and manages files in a unified user directory:
 
 ```
-~/.websearch/                 # Base directory (configurable)
+~/.websearch/                 # Single websearch directory
+├── venv/                    # Virtual environment (recommended)
 ├── config/
 │   └── .env                 # Configuration file
 ├── data/
@@ -89,6 +90,38 @@ The server automatically creates and manages files in user directories:
 - `WEBSEARCH_HOME`: Base directory (default: `~/.websearch`)
 - `WEBSEARCH_CONFIG_DIR`: Config directory override  
 - `WEBSEARCH_LOG_DIR`: Log directory override
+
+## ⚙️ MCP Configuration
+
+### Recommended Setup (unified directory):
+```bash
+# Create everything in ~/.websearch/
+python -m venv ~/.websearch/venv
+source ~/.websearch/venv/bin/activate
+pip install git+https://github.com/vishalkg/web-search.git
+```
+
+### MCP Settings:
+```json
+{
+  "mcpServers": {
+    "websearch": {
+      "command": "~/.websearch/venv/bin/websearch-server"
+    }
+  }
+}
+```
+
+### Alternative (system/user install):
+```json
+{
+  "mcpServers": {
+    "websearch": {
+      "command": "websearch-server"
+    }
+  }
+}
+```
 q chat
 # Try: "search web for python tutorials"
 ```
