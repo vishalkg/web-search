@@ -88,6 +88,32 @@ The server automatically creates and manages files in a unified user directory:
 - `WEBSEARCH_CONFIG_DIR`: Config directory override  
 - `WEBSEARCH_LOG_DIR`: Log directory override
 
+## 🔑 API Configuration
+
+Create `.env` file with your API keys (optional - works without them):
+
+```bash
+# Create config file
+mkdir -p ~/.websearch/config
+cat > ~/.websearch/config/.env << 'EOF'
+# Google Custom Search API (optional)
+GOOGLE_CSE_API_KEY=your_google_api_key_here
+GOOGLE_CSE_ID=your_custom_search_engine_id
+
+# Brave Search API (optional)  
+BRAVE_API_KEY=your_brave_api_key_here
+
+# Quota limits (optional)
+GOOGLE_DAILY_QUOTA=100
+BRAVE_MONTHLY_QUOTA=2000
+EOF
+```
+
+**Without API keys**: Uses DuckDuckGo, Bing, and Startpage (3 engines)  
+**With API keys**: Uses all 5 engines including Google and Brave APIs
+
+**Advanced**: Place `.env` in current directory to override config for specific projects.
+
 ## ⚙️ MCP Configuration
 
 ### Recommended Setup (unified directory):
