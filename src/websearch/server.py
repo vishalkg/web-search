@@ -198,6 +198,50 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
     return json.dumps(batch_response, indent=2)
 
 
+@mcp.tool(
+    name="get_quota_status",
+    description=(
+        "Display current API quota usage for search engines. Shows used/limit "
+        "and quota period (daily/monthly) for Google and Brave APIs.\n\n"
+        "Returns quota information including:\n"
+        "• Current usage count\n"
+        "• Total quota limit\n"
+        "• Quota period (daily for Google, monthly for Brave)\n"
+        "• Percentage used\n"
+        "• Remaining quota\n\n"
+        "Use this to monitor API usage and avoid hitting quota limits."
+    ),
+)
+def get_quota_status() -> str:
+    """Get current quota status for all search APIs"""
+    from .utils.unified_quota import unified_quota
+
+    quota_status = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "services": {}
+    }
+
+    for service in ["google", "brave"]:
+        usage = unified_quota.get_usage(service)
+        used = usage["used"]
+        limit = usage["limit"]
+        period = usage["period"]
+
+        percentage = (used / limit * 100) if limit > 0 else 0
+        remaining = max(0, limit - used)
+
+        quota_status["services"][service] = {
+            "used": used,
+            "limit": limit,
+            "period": period,
+            "percentage_used": round(percentage, 1),
+            "remaining": remaining,
+            "status": "available" if remaining > 0 else "exhausted"
+        }
+
+    return json.dumps(quota_status, indent=2)
+
+
 def main():
     """Main entry point for the server"""
     mcp.run()
