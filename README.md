@@ -49,14 +49,8 @@ q chat "search for python tutorials"
 ### Claude Desktop
 Add to your MCP settings file:
 
-```json
-{
-  "mcpServers": {
-    "websearch": {
-      "command": "~/.websearch/venv/bin/websearch-server"
-    }
-  }
-}
+```bash
+claude mcp add websearch ~/.websearch/venv/bin/websearch-server -s user
 ```
 
 ## 🗂️ File Structure (Installation Independent)
