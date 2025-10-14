@@ -26,21 +26,16 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
         return []
 
     try:
-        headers = {
-            "X-Subscription-Token": api_key,
-            "Accept": "application/json"
-        }
+        headers = {"X-Subscription-Token": api_key, "Accept": "application/json"}
 
         params = {
             "q": query,
             "count": min(num_results, 20),
             "country": "us",
-            "search_lang": "en"
+            "search_lang": "en",
         }
 
-        response = requests.get(
-            BASE_URL, headers=headers, params=params, timeout=5
-        )
+        response = requests.get(BASE_URL, headers=headers, params=params, timeout=5)
         response.raise_for_status()
 
         unified_quota.record_request("brave")
@@ -50,12 +45,14 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
 
         web_results = data.get("web", {}).get("results", [])
         for item in web_results:
-            results.append({
-                "title": item.get("title", ""),
-                "url": item.get("url", ""),
-                "snippet": item.get("description", ""),
-                "source": "brave"
-            })
+            results.append(
+                {
+                    "title": item.get("title", ""),
+                    "url": item.get("url", ""),
+                    "snippet": item.get("description", ""),
+                    "source": "brave",
+                }
+            )
 
         logger.info(f"Brave API found {len(results)} results")
         return results
@@ -71,5 +68,6 @@ def search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
 async def async_search_brave_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async wrapper for Brave API search."""
     import asyncio
+
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, search_brave_api, query, num_results)

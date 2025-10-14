@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Dict, List, Tuple
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -23,8 +23,12 @@ def log_search_response(search_query: str, results: List[Dict], search_id: str) 
 
     # Get engine distribution - include all 5 engines
     distribution = {
-        "duckduckgo": 0, "bing": 0, "startpage": 0, 
-        "google": 0, "brave": 0, "unknown": 0
+        "duckduckgo": 0,
+        "bing": 0,
+        "startpage": 0,
+        "google": 0,
+        "brave": 0,
+        "unknown": 0,
     }
     for result in results:
         engine = result.get("source", "unknown")
@@ -43,10 +47,10 @@ def log_search_response(search_query: str, results: List[Dict], search_id: str) 
                 "title": result.get("title", ""),
                 "url": result.get("url", ""),
                 "source": result.get("source", "unknown"),
-                "quality_score": result.get("quality_score", 0)
+                "quality_score": result.get("quality_score", 0),
             }
             for i, result in enumerate(results)
-        ]
+        ],
     }
 
     try:
@@ -120,7 +124,7 @@ def log_selection_metrics(urls: List[str]) -> None:
 
     try:
         os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
-        with open(metrics_file, "a", encoding='utf-8') as f:
+        with open(metrics_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(event) + "\n")
 
         # Log summary

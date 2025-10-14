@@ -6,7 +6,7 @@ import os
 import tempfile
 import threading
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any, Dict
 
 from .paths import get_quota_dir
 
@@ -25,12 +25,12 @@ class UnifiedQuotaManager:
         self.configs = {
             "google": {
                 "limit": int(os.getenv("GOOGLE_DAILY_QUOTA", "100")),
-                "period": "daily"
+                "period": "daily",
             },
             "brave": {
                 "limit": int(os.getenv("BRAVE_MONTHLY_QUOTA", "2000")),
-                "period": "monthly"
-            }
+                "period": "monthly",
+            },
         }
 
     def _load_all_quotas(self) -> Dict[str, Any]:
@@ -39,7 +39,7 @@ class UnifiedQuotaManager:
             if not self.quota_file.exists():
                 return {}
             try:
-                with open(self.quota_file, 'r', encoding='utf-8') as f:
+                with open(self.quota_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.error(f"Error loading quotas: {e}")
@@ -50,10 +50,7 @@ class UnifiedQuotaManager:
         with _quota_lock:
             try:
                 with tempfile.NamedTemporaryFile(
-                    mode='w',
-                    dir=self.quota_dir,
-                    delete=False,
-                    encoding='utf-8'
+                    mode="w", dir=self.quota_dir, delete=False, encoding="utf-8"
                 ) as temp_file:
                     json.dump(data, temp_file, indent=2)
                     temp_filename = temp_file.name
@@ -132,7 +129,7 @@ class UnifiedQuotaManager:
         return {
             "used": data.get("used", 0),
             "limit": config["limit"],
-            "period": config["period"]
+            "period": config["period"],
         }
 
 

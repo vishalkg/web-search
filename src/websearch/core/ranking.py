@@ -12,7 +12,7 @@ def quality_first_ranking_fallback(
     google_startpage_results: List[Dict[str, Any]],
     bing_ddg_results: List[Dict[str, Any]],
     brave_results: List[Dict[str, Any]],
-    num_results: int
+    num_results: int,
 ) -> List[Dict[str, Any]]:
     """Quality-first ranking for 3-engine fallback system."""
 
@@ -36,9 +36,7 @@ def quality_first_ranking_fallback(
     google_startpage_prepared = prepare_engine_results(
         google_startpage_results, "fallback_primary"
     )
-    bing_ddg_prepared = prepare_engine_results(
-        bing_ddg_results, "fallback_secondary"
-    )
+    bing_ddg_prepared = prepare_engine_results(bing_ddg_results, "fallback_secondary")
     brave_prepared = prepare_engine_results(brave_results, "brave")
 
     logger.info(
@@ -47,9 +45,7 @@ def quality_first_ranking_fallback(
     )
 
     # Combine all candidates
-    all_candidates = (
-        google_startpage_prepared + bing_ddg_prepared + brave_prepared
-    )
+    all_candidates = google_startpage_prepared + bing_ddg_prepared + brave_prepared
 
     if not all_candidates:
         logger.warning("No candidates from any engine")
@@ -75,7 +71,7 @@ def quality_first_ranking(
     startpage_results: List[Dict[str, Any]],
     google_results: List[Dict[str, Any]],
     brave_results: List[Dict[str, Any]],
-    num_results: int
+    num_results: int,
 ) -> List[Dict[str, Any]]:
     """
     Quality-first candidate pool algorithm:
@@ -96,9 +92,7 @@ def quality_first_ranking(
             result_copy = result.copy()
             result_copy["source"] = engine
             result_copy["engine_rank"] = i + 1
-            result_copy["quality_score"] = _calculate_quality_score(
-                result_copy, i + 1
-            )
+            result_copy["quality_score"] = _calculate_quality_score(result_copy, i + 1)
             prepared.append(result_copy)
         return prepared
 
@@ -117,8 +111,11 @@ def quality_first_ranking(
 
     # Combine all candidates
     all_candidates = (
-        ddg_prepared + bing_prepared + startpage_prepared +
-        google_prepared + brave_prepared
+        ddg_prepared
+        + bing_prepared
+        + startpage_prepared
+        + google_prepared
+        + brave_prepared
     )
 
     # Deduplicate keeping highest quality version

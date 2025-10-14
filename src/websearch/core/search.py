@@ -4,11 +4,10 @@ import json
 import logging
 import threading
 
-from ..engines.search import (
-    search_bing, search_brave, search_duckduckgo, search_google, search_startpage
-)
+from ..engines.search import (search_bing, search_brave, search_duckduckgo,
+                              search_google, search_startpage)
 from .common import (cache_search_result, cleanup_expired_cache,
-                     format_search_response, format_fallback_search_response,
+                     format_fallback_search_response, format_search_response,
                      get_cached_search_result, log_search_completion)
 from .fallback_search import fallback_parallel_search
 
@@ -42,8 +41,11 @@ def parallel_search(query: str, num_results: int) -> tuple:
         thread.join(timeout=8)
 
     return (
-        results["ddg"], results["bing"], results["startpage"],
-        results["google"], results["brave"]
+        results["ddg"],
+        results["bing"],
+        results["startpage"],
+        results["google"],
+        results["brave"],
     )
 
 
@@ -70,8 +72,11 @@ def search_web_fallback(search_query: str, num_results: int = 10) -> str:
 
     # Format response for 3-engine fallback system
     response_json = format_fallback_search_response(
-        search_query, google_startpage_results, bing_ddg_results,
-        brave_results, num_results
+        search_query,
+        google_startpage_results,
+        bing_ddg_results,
+        brave_results,
+        num_results,
     )
 
     # Cache and log
@@ -109,8 +114,13 @@ def search_web(search_query: str, num_results: int = 10) -> str:
 
     # Format response
     response_json = format_search_response(
-        search_query, ddg_results, bing_results, startpage_results,
-        google_results, brave_results, num_results
+        search_query,
+        ddg_results,
+        bing_results,
+        startpage_results,
+        google_results,
+        brave_results,
+        num_results,
     )
 
     # Cache the result

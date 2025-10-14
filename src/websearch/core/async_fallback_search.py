@@ -4,10 +4,10 @@ import asyncio
 import logging
 from typing import Any, Dict, List, Tuple
 
-from ..engines.async_search import (
-    async_search_bing, async_search_brave, async_search_duckduckgo,
-    async_search_google, async_search_startpage
-)
+from ..engines.async_search import (async_search_bing, async_search_brave,
+                                    async_search_duckduckgo,
+                                    async_search_google,
+                                    async_search_startpage)
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +54,7 @@ async def async_fallback_parallel_search(
     google_startpage_results = (
         results[0] if not isinstance(results[0], Exception) else []
     )
-    bing_ddg_results = (
-        results[1] if not isinstance(results[1], Exception) else []
-    )
+    bing_ddg_results = results[1] if not isinstance(results[1], Exception) else []
     brave_results = results[2] if not isinstance(results[2], Exception) else []
 
     return google_startpage_results, bing_ddg_results, brave_results

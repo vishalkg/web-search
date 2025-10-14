@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Rate limiting: base delay + random jitter (min, max) seconds
 RATE_LIMITS = {
-    'duckduckgo': (1.5, 3.0),  # 1.5-3.0s random delay
-    'bing': (1.0, 2.5),        # 1.0-2.5s random delay
-    'startpage': (2.0, 4.0),   # 2.0-4.0s random delay
+    "duckduckgo": (1.5, 3.0),  # 1.5-3.0s random delay
+    "bing": (1.0, 2.5),  # 1.0-2.5s random delay
+    "startpage": (2.0, 4.0),  # 2.0-4.0s random delay
 }
 
 # Track last request time per engine
@@ -76,7 +76,7 @@ async def async_search_engine_base(
 
 async def async_search_duckduckgo(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search DuckDuckGo"""
-    await _rate_limit_delay('duckduckgo')
+    await _rate_limit_delay("duckduckgo")
     url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
     return await async_search_engine_base(
         url, parse_duckduckgo_results, "DuckDuckGo", query, num_results
@@ -85,7 +85,7 @@ async def async_search_duckduckgo(query: str, num_results: int) -> List[Dict[str
 
 async def async_search_bing(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Bing"""
-    await _rate_limit_delay('bing')
+    await _rate_limit_delay("bing")
     url = f"https://www.bing.com/search?q={quote_plus(query)}"
     return await async_search_engine_base(
         url, parse_bing_results, "Bing", query, num_results
@@ -94,7 +94,7 @@ async def async_search_bing(query: str, num_results: int) -> List[Dict[str, Any]
 
 async def async_search_startpage(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async search Startpage"""
-    await _rate_limit_delay('startpage')
+    await _rate_limit_delay("startpage")
     url = f"https://www.startpage.com/sp/search?query={quote_plus(query)}"
     return await async_search_engine_base(
         url, parse_startpage_results, "Startpage", query, num_results

@@ -15,11 +15,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from websearch.core.async_search import async_search_web
 from websearch.core.content import fetch_single_page_content
-from websearch.engines.async_search import (
-    async_search_bing,
-    async_search_duckduckgo,
-    async_search_startpage,
-)
+from websearch.engines.async_search import (async_search_bing,
+                                            async_search_duckduckgo,
+                                            async_search_startpage)
 from websearch.utils.cache import SimpleCache, content_cache, search_cache
 
 

@@ -12,11 +12,8 @@ import requests
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from websearch.core.content import fetch_single_page_content
-from websearch.engines.search import (
-    search_bing,
-    search_duckduckgo,
-    search_startpage,
-)
+from websearch.engines.search import (search_bing, search_duckduckgo,
+                                      search_startpage)
 from websearch.utils.cache import content_cache, search_cache
 
 

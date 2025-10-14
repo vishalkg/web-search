@@ -7,11 +7,9 @@ import tempfile
 import pytest
 
 from src.websearch.core.common import deduplicate_results
-from src.websearch.utils.tracking import (
-    add_tracking_to_url,
-    extract_tracking_from_url,
-    generate_search_id,
-)
+from src.websearch.utils.tracking import (add_tracking_to_url,
+                                          extract_tracking_from_url,
+                                          generate_search_id)
 
 
 class TestURLTracking:

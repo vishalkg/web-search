@@ -7,8 +7,8 @@ from urllib.parse import quote_plus
 
 from ..utils.advanced_cache import enhanced_search_cache
 from ..utils.cache import get_cache_key
-from .ranking import (quality_first_ranking, quality_first_ranking_fallback,
-                      get_engine_distribution)
+from .ranking import (get_engine_distribution, quality_first_ranking,
+                      quality_first_ranking_fallback)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ def format_fallback_search_response(
 ) -> str:
     """Format search response for 3-engine fallback system."""
     from ..utils.tracking import generate_search_id, log_search_response
+
     logger.info(
         f"🔍 Fallback results - Google/Startpage: {len(google_startpage_results)}, "
         f"Bing/DDG: {len(bing_ddg_results)}, Brave: {len(brave_results)}"
@@ -80,9 +81,8 @@ def format_search_response(
     cached: bool = False,
 ) -> str:
     """Format the final search response with optimized ranking and tracking"""
-    from ..utils.tracking import (
-        add_tracking_to_url, generate_search_id, log_search_response
-    )
+    from ..utils.tracking import (add_tracking_to_url, generate_search_id,
+                                  log_search_response)
 
     # Generate search ID for tracking
     search_id = generate_search_id()
@@ -96,8 +96,12 @@ def format_search_response(
 
     # Apply quality-first ranking algorithm
     ranked_results = quality_first_ranking(
-        ddg_results, bing_results, startpage_results, google_results,
-        brave_results, num_results
+        ddg_results,
+        bing_results,
+        startpage_results,
+        google_results,
+        brave_results,
+        num_results,
     )
 
     # Get engine distribution for monitoring

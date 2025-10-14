@@ -5,7 +5,7 @@ import asyncio
 import json
 import logging
 import threading
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import List, Union
 
 from fastmcp import FastMCP
@@ -15,6 +15,7 @@ from .utils.paths import find_env_file
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     env_file = find_env_file()
     if env_file.exists():
         load_dotenv(env_file)
@@ -28,8 +29,8 @@ from . import __version__
 from .core.async_search import async_search_web_fallback as async_search_web
 from .core.content import fetch_single_page_content
 from .core.search import search_web_fallback as sync_search_web
-from .utils.rotation import get_rotated_file
 from .utils.paths import get_log_file
+from .utils.rotation import get_rotated_file
 
 # Get rotated log file (weekly rotation)
 log_file = get_rotated_file(get_log_file(), rotation_days=7)
@@ -220,10 +221,7 @@ def get_quota_status() -> str:
     """Get current quota status for all search APIs"""
     from .utils.unified_quota import unified_quota
 
-    quota_status = {
-        "timestamp": datetime.now(UTC).isoformat() + "Z",
-        "services": {}
-    }
+    quota_status = {"timestamp": datetime.now(UTC).isoformat() + "Z", "services": {}}
 
     for service in ["google", "brave"]:
         usage = unified_quota.get_usage(service)
@@ -240,7 +238,7 @@ def get_quota_status() -> str:
             "period": period,
             "percentage_used": round(percentage, 1),
             "remaining": remaining,
-            "status": "available" if remaining > 0 else "exhausted"
+            "status": "available" if remaining > 0 else "exhausted",
         }
 
     return json.dumps(quota_status, indent=2)

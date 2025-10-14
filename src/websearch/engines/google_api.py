@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 try:
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
+
     GOOGLE_API_AVAILABLE = True
 except ImportError:
     GOOGLE_API_AVAILABLE = False
@@ -40,22 +41,22 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     try:
         service = build("customsearch", "v1", developerKey=api_key)
         # pylint: disable=no-member
-        result = service.cse().list(
-            q=query,
-            cx=cse_id,
-            num=min(num_results, 10)
-        ).execute()
+        result = (
+            service.cse().list(q=query, cx=cse_id, num=min(num_results, 10)).execute()
+        )
 
         unified_quota.record_request("google")
 
         results = []
         for item in result.get("items", []):
-            results.append({
-                "title": item.get("title", ""),
-                "url": item.get("link", ""),
-                "snippet": item.get("snippet", ""),
-                "source": "google"
-            })
+            results.append(
+                {
+                    "title": item.get("title", ""),
+                    "url": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "google",
+                }
+            )
 
         logger.info(f"Google API found {len(results)} results")
         return results
@@ -71,5 +72,6 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
 async def async_search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
     """Async wrapper for Google API search."""
     import asyncio
+
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, search_google_api, query, num_results)

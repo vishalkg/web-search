@@ -5,9 +5,8 @@ import os
 import threading
 from typing import Any, Dict, List, Tuple
 
-from ..engines.search import (
-    search_bing, search_brave, search_duckduckgo, search_google, search_startpage
-)
+from ..engines.search import (search_bing, search_brave, search_duckduckgo,
+                              search_google, search_startpage)
 
 logger = logging.getLogger(__name__)
 
