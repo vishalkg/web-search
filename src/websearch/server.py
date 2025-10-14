@@ -28,6 +28,8 @@ from . import __version__
 from .core.async_search import async_search_web_fallback as async_search_web
 from .core.content import fetch_single_page_content
 from .core.search import search_web_fallback as sync_search_web
+from .utils.rotation import rotate_file
+from .utils.paths import get_metrics_file
 
 # Setup logging
 log_file = get_log_file()
@@ -37,6 +39,10 @@ logging.basicConfig(
     handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
+# Rotate files on startup
+rotate_file(log_file, max_lines=1000)
+rotate_file(get_metrics_file(), max_lines=1000, max_days=30)
 
 # Initialize FastMCP server
 mcp = FastMCP("WebSearch")

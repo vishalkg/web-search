@@ -18,7 +18,16 @@ High-performance Model Context Protocol (MCP) server for web search and content 
 
 ## 📦 Installation
 
-### Production Use (Recommended)
+### Quick Start with uvx (Recommended)
+```bash
+# Install uv (10-100x faster than pip, automatic isolation)
+brew install uv
+
+# Run directly - no venv management needed
+uvx --from git+https://github.com/vishalkg/web-search websearch-server
+```
+
+### Traditional Installation
 ```bash
 # Create virtual environment
 python -m venv ~/.websearch/venv
