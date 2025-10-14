@@ -1,71 +1,37 @@
 """File rotation utilities for logs and metrics."""
 
 import logging
-import threading
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
-def _should_rotate(file_path: Path, max_lines: int) -> bool:
-    """Check if file needs rotation."""
-    if not file_path.exists():
-        return False
+def get_rotated_file(base_path: Path, rotation_days: int) -> Path:
+    """Get current file with rotation, creating new timestamped file if needed."""
+    pattern = f"{base_path.stem}_*{base_path.suffix}"
+    existing = sorted(base_path.parent.glob(pattern))
 
-    # Quick check: file size > 1MB or line count
-    if file_path.stat().st_size < 1_000_000:  # < 1MB
-        return False
+    if existing:
+        latest = existing[-1]
+        try:
+            # Extract timestamp: web-search_2025-10-13.log -> 2025-10-13
+            timestamp_str = latest.stem.split('_')[-1]
+            file_date = datetime.strptime(timestamp_str, '%Y-%m-%d')
 
-    try:
-        with open(file_path, encoding='utf-8') as f:
-            line_count = sum(1 for _ in f)
-        return line_count > max_lines * 1.5  # Only rotate if 50% over
-    except OSError:
-        return False
+            # Check if still within rotation period
+            if (datetime.utcnow() - file_date).days < rotation_days:
+                return latest
 
+            # Rotation period passed - delete old files
+            for old_file in existing:
+                old_file.unlink()
+                logger.info("Deleted old file: %s", old_file.name)
+        except (ValueError, IndexError) as e:
+            logger.warning("Failed to parse timestamp from %s: %s", latest, e)
 
-def _rotate_file(file_path: Path, max_lines: int, max_days: int) -> None:
-    """Rotate file by keeping only recent entries."""
-    try:
-        lines = file_path.read_text(encoding='utf-8').splitlines()
-
-        # Filter by date if JSONL with timestamp
-        if file_path.suffix == '.jsonl':
-            cutoff = datetime.utcnow() - timedelta(days=max_days)
-            filtered = []
-            for line in lines:
-                try:
-                    import json
-                    data = json.loads(line)
-                    timestamp = data.get('timestamp', '').replace('Z', '+00:00')
-                    ts = datetime.fromisoformat(timestamp)
-                    if ts > cutoff:
-                        filtered.append(line)
-                except (ValueError, KeyError):
-                    filtered.append(line)
-            lines = filtered
-
-        # Keep only last N lines
-        if len(lines) > max_lines:
-            lines = lines[-max_lines:]
-            file_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-            logger.info("Rotated %s: kept %d lines", file_path.name, len(lines))
-
-    except OSError as e:
-        logger.error("Failed to rotate %s: %s", file_path, e)
-
-
-def rotate_file_async(
-    file_path: Path, max_lines: int = 1000, max_days: int = 30
-) -> None:
-    """Rotate file asynchronously if needed."""
-    if not _should_rotate(file_path, max_lines):
-        return
-
-    thread = threading.Thread(
-        target=_rotate_file,
-        args=(file_path, max_lines, max_days),
-        daemon=True
-    )
-    thread.start()
+    # Create new timestamped file
+    timestamp = datetime.utcnow().strftime('%Y-%m-%d')
+    new_file = base_path.parent / f"{base_path.stem}_{timestamp}{base_path.suffix}"
+    logger.info("Created new rotated file: %s", new_file.name)
+    return new_file

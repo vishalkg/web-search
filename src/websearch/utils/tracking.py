@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from .paths import get_metrics_file
+from .rotation import get_rotated_file
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,8 @@ ENGINE_CODES = {"ddg": "d", "bing": "b", "startpage": "s"}
 
 def log_search_response(search_query: str, results: List[Dict], search_id: str) -> None:
     """Log search response sent to LLM for comparison with selections"""
-    metrics_file = get_metrics_file()
+    # Get rotated metrics file (monthly rotation)
+    metrics_file = get_rotated_file(get_metrics_file(), rotation_days=30)
 
     # Get engine distribution - include all 5 engines
     distribution = {
@@ -94,7 +96,8 @@ def log_selection_metrics(urls: List[str]) -> None:
     if not urls:
         return
 
-    metrics_file = get_metrics_file()
+    # Get rotated metrics file (monthly rotation)
+    metrics_file = get_rotated_file(get_metrics_file(), rotation_days=30)
 
     selections = []
     for url in urls:
@@ -117,7 +120,7 @@ def log_selection_metrics(urls: List[str]) -> None:
 
     try:
         os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
-        with open(metrics_file, "a") as f:
+        with open(metrics_file, "a", encoding='utf-8') as f:
             f.write(json.dumps(event) + "\n")
 
         # Log summary
