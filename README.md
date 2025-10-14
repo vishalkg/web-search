@@ -37,23 +37,52 @@ uv pip install -e .
 
 ## ⚙️ Configuration
 
+### API Keys (Optional but Recommended)
+
+For best results, configure API keys for Google Custom Search and Brave Search. Without API keys, the server falls back to web scraping which is less reliable.
+
+**Get API Keys:**
+- Google: [Custom Search API](https://developers.google.com/custom-search/v1/overview)
+- Brave: [Brave Search API](https://brave.com/search/api/)
+
 ### Q CLI
 ```bash
-# Add to Q CLI
+# Add to Q CLI with API keys
 q mcp add --name websearch --command "uvx --from git+https://github.com/vishalkg/web-search websearch-server"
+
+# Then edit ~/.aws/amazonq/mcp.json to add API keys in the env section:
+{
+  "websearch": {
+    "env": {
+      "GOOGLE_CSE_API_KEY": "your-google-api-key",
+      "GOOGLE_CSE_ID": "your-search-engine-id",
+      "BRAVE_SEARCH_API_KEY": "your-brave-api-key"
+    }
+  }
+}
 
 # Test
 q chat "search for python tutorials"
 ```
 
 ### Claude Desktop
-Add to your MCP settings file:
+Add to your MCP settings file with API keys:
 
 ```json
 {
   "mcpServers": {
     "websearch": {
       "command": "uvx",
+      "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"],
+      "env": {
+        "GOOGLE_CSE_API_KEY": "your-google-api-key",
+        "GOOGLE_CSE_ID": "your-search-engine-id",
+        "BRAVE_SEARCH_API_KEY": "your-brave-api-key"
+      }
+    }
+  }
+}
+```
       "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"]
     }
   }
