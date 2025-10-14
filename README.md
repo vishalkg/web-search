@@ -39,7 +39,7 @@ uv pip install -e .
 ### Q CLI
 ```bash
 # Add to Q CLI
-q mcp add websearch --command "uvx --from git+https://github.com/vishalkg/web-search websearch-server"
+q mcp add --name websearch --command "uvx --from git+https://github.com/vishalkg/web-search websearch-server"
 
 # Test
 q chat "search for python tutorials"
