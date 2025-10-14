@@ -14,6 +14,7 @@ High-performance Model Context Protocol (MCP) server for web search and content 
 - **📄 Content Extraction**: Clean text extraction from web pages
 - **💾 Smart Caching**: LRU cache with compression and deduplication
 - **🔑 API Integration**: Google Custom Search, Brave Search APIs with quota management
+- **🔄 Auto-Rotation**: Timestamped logs (weekly) and metrics (monthly) with auto-cleanup
 - **⚡ Resilient**: Automatic failover and comprehensive error handling
 
 ## 📦 Installation
