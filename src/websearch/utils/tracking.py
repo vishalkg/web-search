@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, List, Tuple
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -32,7 +32,7 @@ def log_search_response(search_query: str, results: List[Dict], search_id: str) 
 
     response_data = {
         "event_type": "search_response",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "search_id": search_id,
         "query": search_query,
         "total_results": len(results),
@@ -113,7 +113,7 @@ def log_selection_metrics(urls: List[str]) -> None:
 
     event = {
         "event_type": "url_selection",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "selections": selections,
         "total_selected": len(urls),
     }
@@ -136,4 +136,4 @@ def log_selection_metrics(urls: List[str]) -> None:
 
 def generate_search_id() -> str:
     """Generate unique search ID."""
-    return datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    return datetime.now(UTC).strftime("%Y%m%d_%H%M%S_%f")[:-3]

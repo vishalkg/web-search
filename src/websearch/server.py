@@ -5,7 +5,7 @@ import asyncio
 import json
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Union
 
 from fastmcp import FastMCP
@@ -167,7 +167,7 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
                 "url": url_to_fetch,
                 "success": False,
                 "error": f"Thread error: {str(e)}",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
                 "cached": False,
             }
 
@@ -191,7 +191,7 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
         "total_urls": len(urls),
         "successful_fetches": sum(1 for r in results if r.get("success", False)),
         "failed_fetches": sum(1 for r in results if not r.get("success", False)),
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "results": results,
     }
 
@@ -221,7 +221,7 @@ def get_quota_status() -> str:
     from .utils.unified_quota import unified_quota
 
     quota_status = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "services": {}
     }
 
