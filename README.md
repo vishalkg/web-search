@@ -18,38 +18,28 @@ High-performance Model Context Protocol (MCP) server for web search and content 
 
 ## 📦 Installation
 
-### Quick Start with uvx (Recommended)
+### Quick Start (Recommended)
 ```bash
-# Install uv (10-100x faster than pip, automatic isolation)
+# Install uv
 brew install uv
 
-# Run directly - no venv management needed
+# Run directly - no setup needed
 uvx --from git+https://github.com/vishalkg/web-search websearch-server
-```
-
-### Traditional Installation
-```bash
-# Create virtual environment
-python -m venv ~/.websearch/venv
-source ~/.websearch/venv/bin/activate
-
-# Install from GitHub
-pip install git+https://github.com/vishalkg/web-search.git
 ```
 
 ### Development
 ```bash
 git clone https://github.com/vishalkg/web-search.git
 cd web-search
-pip install -e .
+uv pip install -e .
 ```
 
 ## ⚙️ Configuration
 
 ### Q CLI
 ```bash
-# Add to Q CLI (after installation)
-q mcp add --name websearch --command ~/.websearch/venv/bin/websearch-server
+# Add to Q CLI
+q mcp add websearch --command "uvx --from git+https://github.com/vishalkg/web-search websearch-server"
 
 # Test
 q chat "search for python tutorials"
@@ -58,26 +48,45 @@ q chat "search for python tutorials"
 ### Claude Desktop
 Add to your MCP settings file:
 
-```bash
-claude mcp add websearch ~/.websearch/venv/bin/websearch-server -s user
+```json
+{
+  "mcpServers": {
+    "websearch": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"]
+    }
+  }
+}
 ```
 
-## 🗂️ File Structure (Installation Independent)
+## 🗂️ File Structure
 
-The server automatically creates and manages files in a unified user directory:
+The server automatically manages files in OS-appropriate locations:
 
+**macOS:**
 ```
-~/.websearch/                 # Single websearch directory
-├── venv/                    # Virtual environment (recommended)
-├── config/
-│   └── .env                 # Configuration file
-├── data/
-│   ├── search-metrics.jsonl # Search analytics
-│   └── quota/              # API quota tracking
-│       ├── google_quota.json
-│       └── brave_quota.json
-├── logs/
-│   └── web-search.log      # Application logs
+~/Library/Application Support/websearch/  # Data
+~/Library/Logs/websearch/                 # Logs
+~/Library/Application Support/websearch/  # Config
+```
+
+**Linux:**
+```
+~/.local/share/websearch/    # Data
+~/.local/state/websearch/    # Logs
+~/.config/websearch/         # Config
+```
+
+**Files:**
+```
+data/
+├── search-metrics.jsonl     # Search analytics (auto-rotated)
+└── quota/
+    └── quotas.json          # API quota tracking
+logs/
+└── web-search.log           # Application logs (auto-rotated)
+config/
+└── .env                     # Configuration file
 └── cache/                  # Optional caching
 ```
 
