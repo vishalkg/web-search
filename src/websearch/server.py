@@ -10,7 +10,7 @@ from typing import List, Union
 
 from fastmcp import FastMCP
 
-from .utils.paths import get_log_file, find_env_file
+from .utils.paths import find_env_file
 
 # Load environment variables from .env file
 try:
@@ -29,7 +29,7 @@ from .core.async_search import async_search_web_fallback as async_search_web
 from .core.content import fetch_single_page_content
 from .core.search import search_web_fallback as sync_search_web
 from .utils.rotation import get_rotated_file
-from .utils.paths import get_metrics_file, get_log_file
+from .utils.paths import get_log_file
 
 # Get rotated log file (weekly rotation)
 log_file = get_rotated_file(get_log_file(), rotation_days=7)
