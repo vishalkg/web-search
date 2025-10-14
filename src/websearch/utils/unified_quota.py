@@ -21,68 +21,60 @@ class UnifiedQuotaManager:
 
     def __init__(self):
         self.quota_dir = get_quota_dir()
+        self.quota_file = self.quota_dir / "quotas.json"
         self.configs = {
             "google": {
                 "limit": int(os.getenv("GOOGLE_DAILY_QUOTA", "100")),
-                "period": "daily",
-                "file": self.quota_dir / "google_quota.json"
+                "period": "daily"
             },
             "brave": {
                 "limit": int(os.getenv("BRAVE_MONTHLY_QUOTA", "2000")),
-                "period": "monthly",
-                "file": self.quota_dir / "brave_quota.json"
+                "period": "monthly"
             }
         }
 
-    def _load_quota(self, service: str) -> Dict[str, Any]:
-        """Load quota data for a service with thread safety."""
-        config = self.configs[service]
-        quota_file = config["file"]
-
+    def _load_all_quotas(self) -> Dict[str, Any]:
+        """Load all quota data from single file."""
         with _quota_lock:
-            if not quota_file.exists():
-                period_key = "date" if config["period"] == "daily" else "month"
-                return {period_key: None, "used": 0}
-
+            if not self.quota_file.exists():
+                return {}
             try:
-                with open(quota_file, 'r', encoding='utf-8') as f:
+                with open(self.quota_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except Exception as e:
-                logger.error(f"Error loading quota for {service}: {e}")
-                period_key = "date" if config["period"] == "daily" else "month"
-                return {period_key: None, "used": 0}
+                logger.error(f"Error loading quotas: {e}")
+                return {}
 
-    def _save_quota(self, service: str, data: Dict[str, Any]):
-        """Save quota data with atomic write and secure permissions."""
-        config = self.configs[service]
-        quota_file = config["file"]
-
+    def _save_all_quotas(self, data: Dict[str, Any]) -> None:
+        """Save all quota data to single file."""
         with _quota_lock:
             try:
-                # Atomic write: write to temp file, then rename
                 with tempfile.NamedTemporaryFile(
                     mode='w',
-                    dir=quota_file.parent,
+                    dir=self.quota_dir,
                     delete=False,
                     encoding='utf-8'
                 ) as temp_file:
                     json.dump(data, temp_file, indent=2)
                     temp_filename = temp_file.name
 
-                # Set secure permissions before moving
                 os.chmod(temp_filename, 0o600)
-
-                # Atomic rename
-                os.rename(temp_filename, quota_file)
-
+                os.replace(temp_filename, self.quota_file)
             except Exception as e:
-                logger.error(f"Error saving quota for {service}: {e}")
-                # Clean up temp file if it exists
-                try:
-                    if 'temp_filename' in locals():
-                        os.unlink(temp_filename)
-                except OSError:
-                    pass
+                logger.error(f"Error saving quotas: {e}")
+
+    def _load_quota(self, service: str) -> Dict[str, Any]:
+        """Load quota data for a service."""
+        all_quotas = self._load_all_quotas()
+        config = self.configs[service]
+        period_key = "date" if config["period"] == "daily" else "month"
+        return all_quotas.get(service, {period_key: None, "used": 0})
+
+    def _save_quota(self, service: str, data: Dict[str, Any]):
+        """Save quota data for a service."""
+        all_quotas = self._load_all_quotas()
+        all_quotas[service] = data
+        self._save_all_quotas(all_quotas)
 
     def _is_new_period(self, service: str, data: Dict[str, Any]) -> bool:
         """Check if we're in a new quota period."""

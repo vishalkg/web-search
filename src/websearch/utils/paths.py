@@ -2,17 +2,21 @@
 
 import os
 from pathlib import Path
+from platformdirs import user_data_dir, user_config_dir, user_log_dir
 
 
 def get_websearch_home() -> Path:
     """Get websearch home directory, independent of repo."""
-    home = os.getenv('WEBSEARCH_HOME', os.path.expanduser('~/.websearch'))
-    return Path(home)
-
+    # Allow override via env var, otherwise use OS-appropriate location
+    if home := os.getenv('WEBSEARCH_HOME'):
+        return Path(home)
+    return Path(user_data_dir('websearch', appauthor=False))
 
 def get_config_dir() -> Path:
     """Get configuration directory."""
-    return get_websearch_home() / 'config'
+    if home := os.getenv('WEBSEARCH_HOME'):
+        return Path(home) / 'config'
+    return Path(user_config_dir('websearch', appauthor=False))
 
 
 def get_data_dir() -> Path:
@@ -22,7 +26,9 @@ def get_data_dir() -> Path:
 
 def get_logs_dir() -> Path:
     """Get logs directory."""
-    return get_websearch_home() / 'logs'
+    if home := os.getenv('WEBSEARCH_HOME'):
+        return Path(home) / 'logs'
+    return Path(user_log_dir('websearch', appauthor=False))
 
 
 def get_quota_dir() -> Path:

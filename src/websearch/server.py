@@ -5,12 +5,12 @@ import asyncio
 import json
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Union
 
 from fastmcp import FastMCP
 
-from .utils.paths import get_log_file, find_env_file
+from .utils.paths import find_env_file
 
 # Load environment variables from .env file
 try:
@@ -28,9 +28,13 @@ from . import __version__
 from .core.async_search import async_search_web_fallback as async_search_web
 from .core.content import fetch_single_page_content
 from .core.search import search_web_fallback as sync_search_web
+from .utils.rotation import get_rotated_file
+from .utils.paths import get_log_file
+
+# Get rotated log file (weekly rotation)
+log_file = get_rotated_file(get_log_file(), rotation_days=7)
 
 # Setup logging
-log_file = get_log_file()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -163,7 +167,7 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
                 "url": url_to_fetch,
                 "success": False,
                 "error": f"Thread error: {str(e)}",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
                 "cached": False,
             }
 
@@ -187,7 +191,7 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
         "total_urls": len(urls),
         "successful_fetches": sum(1 for r in results if r.get("success", False)),
         "failed_fetches": sum(1 for r in results if not r.get("success", False)),
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "results": results,
     }
 
@@ -217,7 +221,7 @@ def get_quota_status() -> str:
     from .utils.unified_quota import unified_quota
 
     quota_status = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "services": {}
     }
 
