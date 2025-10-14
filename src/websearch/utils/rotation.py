@@ -1,8 +1,8 @@
 """File rotation utilities for logs and metrics."""
 
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +16,12 @@ def get_rotated_file(base_path: Path, rotation_days: int) -> Path:
         latest = existing[-1]
         try:
             # Extract timestamp: web-search_2025-10-13.log -> 2025-10-13
-            timestamp_str = latest.stem.split('_')[-1]
-            file_date = datetime.strptime(timestamp_str, '%Y-%m-%d')
+            timestamp_str = latest.stem.split("_")[-1]
+            file_date = datetime.strptime(timestamp_str, "%Y-%m-%d")
 
             # Check if still within rotation period
-            if (datetime.now(UTC).replace(tzinfo=None) - file_date).days < rotation_days:
+            days_since = (datetime.now(UTC).replace(tzinfo=None) - file_date).days
+            if days_since < rotation_days:
                 return latest
 
             # Rotation period passed - delete old files
@@ -31,7 +32,7 @@ def get_rotated_file(base_path: Path, rotation_days: int) -> Path:
             logger.warning("Failed to parse timestamp from %s: %s", latest, e)
 
     # Create new timestamped file
-    timestamp = datetime.now(UTC).strftime('%Y-%m-%d')
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d")
     new_file = base_path.parent / f"{base_path.stem}_{timestamp}{base_path.suffix}"
     logger.info("Created new rotated file: %s", new_file.name)
     return new_file
