@@ -53,6 +53,8 @@ q mcp add --name websearch --command "uvx --from git+https://github.com/vishalkg
 # Then edit ~/.aws/amazonq/mcp.json to add API keys in the env section:
 {
   "websearch": {
+    "command": "/opt/homebrew/bin/uvx",
+    "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"]
     "env": {
       "GOOGLE_CSE_API_KEY": "your-google-api-key",
       "GOOGLE_CSE_ID": "your-search-engine-id",
@@ -60,8 +62,9 @@ q mcp add --name websearch --command "uvx --from git+https://github.com/vishalkg
     }
   }
 }
-
+```
 # Test
+```
 q chat "search for python tutorials"
 ```
 
@@ -79,11 +82,6 @@ Add to your MCP settings file with API keys:
         "GOOGLE_CSE_ID": "your-search-engine-id",
         "BRAVE_SEARCH_API_KEY": "your-brave-api-key"
       }
-    }
-  }
-}
-```
-      "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"]
     }
   }
 }
