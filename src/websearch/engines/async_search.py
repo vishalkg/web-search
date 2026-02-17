@@ -9,6 +9,7 @@ from urllib.parse import quote_plus
 import aiohttp
 from bs4 import BeautifulSoup
 
+from ..utils.connection_pool import get_session
 from .brave_api import async_search_brave_api
 from .google_api import async_search_google_api
 from .parsers import (parse_bing_results, parse_duckduckgo_results,
@@ -53,10 +54,10 @@ async def async_search_engine_base(
 ) -> List[Dict[str, Any]]:
     """Base async function for search engine implementations"""
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                html = await response.text()
+        session = get_session()  # Use global connection pool
+        async with session.get(url) as response:
+            response.raise_for_status()
+            html = await response.text()
 
         soup = BeautifulSoup(html, "lxml")
         results = parser_func(soup, num_results)
