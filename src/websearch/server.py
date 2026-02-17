@@ -155,7 +155,10 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
             }
 
     # Fetch all URLs concurrently with asyncio.gather
-    results = await asyncio.gather(*[fetch_with_tracking(url) for url in urls])
+    results = await asyncio.gather(
+        *[fetch_with_tracking(url) for url in urls],
+        return_exceptions=True  # Defensive: ensure all URLs attempted even if some fail
+    )
 
     batch_response = {
         "batch_request": True,
