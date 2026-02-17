@@ -45,27 +45,48 @@ For best results, configure API keys for Google Custom Search and Brave Search. 
 - Google: [Custom Search API](https://developers.google.com/custom-search/v1/overview)
 - Brave: [Brave Search API](https://brave.com/search/api/)
 
-### Q CLI
+### Kiro CLI (formerly Amazon Q CLI)
 ```bash
-# Add to Q CLI with API keys
-q mcp add --name websearch --command "uvx --from git+https://github.com/vishalkg/web-search websearch-server"
+# Add to Kiro CLI with API keys
+kiro-cli mcp add --name websearch \
+  --command uvx \
+  --args "--from" --args "git+https://github.com/vishalkg/web-search" --args "websearch-server" \
+  --env "GOOGLE_CSE_API_KEY=your-google-api-key" \
+  --env "GOOGLE_CSE_ID=your-search-engine-id" \
+  --env "BRAVE_SEARCH_API_KEY=your-brave-api-key"
 
-# Then edit ~/.aws/amazonq/mcp.json to add API keys in the env section:
+# Verify installation
+kiro-cli mcp list
+```
+
+**Configuration scopes:**
+- `--scope global`: Available to all agents
+- `--scope workspace`: Project-specific configuration
+- `--scope default`: Default agent configuration (default)
+
+### Claude Code
+Add to your Claude Code MCP settings (`~/.claude/mcp_settings.json`):
+
+```json
 {
-  "websearch": {
-    "command": "/opt/homebrew/bin/uvx",
-    "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"]
-    "env": {
-      "GOOGLE_CSE_API_KEY": "your-google-api-key",
-      "GOOGLE_CSE_ID": "your-search-engine-id",
-      "BRAVE_SEARCH_API_KEY": "your-brave-api-key"
+  "mcpServers": {
+    "websearch": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/vishalkg/web-search", "websearch-server"],
+      "env": {
+        "GOOGLE_CSE_API_KEY": "your-google-api-key",
+        "GOOGLE_CSE_ID": "your-search-engine-id",
+        "BRAVE_SEARCH_API_KEY": "your-brave-api-key"
+      }
     }
   }
 }
 ```
-# Test
-```
-q chat "search for python tutorials"
+
+**Test the integration:**
+```bash
+# Restart Claude Code after configuration
+# Use search_web or fetch_page_content tools in your conversations
 ```
 
 ### Claude Desktop
