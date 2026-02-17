@@ -4,7 +4,6 @@
 import asyncio
 import json
 import logging
-import threading
 from datetime import UTC, datetime
 from typing import List, Union
 
@@ -27,8 +26,7 @@ except ImportError:
 
 from . import __version__
 from .core.async_search import async_search_web_fallback as async_search_web
-from .core.content import fetch_single_page_content
-from .core.search import search_web_fallback as sync_search_web
+from .core.content import fetch_single_page_content_async
 from .utils.connection_pool import close_pool
 from .utils.paths import get_log_file
 from .utils.rotation import get_rotated_file
@@ -77,23 +75,9 @@ logger.info(f"WebSearch MCP server v{__version__} starting with async optimizati
         "tutorials"
     ),
 )
-def search_web(search_query: str, num_results: int = 10) -> str:
-    """Perform a web search using multiple search engines with async optimizations"""
-    try:
-        # Use async implementation for better performance
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            result = loop.run_until_complete(
-                async_search_web(search_query, num_results)
-            )
-            return result
-        finally:
-            loop.close()
-    except Exception as e:
-        logger.error(f"Async search failed, falling back to sync: {e}")
-        # Fallback to sync implementation
-        return sync_search_web(search_query, num_results)
+async def search_web(search_query: str, num_results: int = 10) -> str:
+    """Perform a web search using multiple search engines with native async"""
+    return await async_search_web(search_query, num_results)
 
 
 @mcp.tool(
@@ -105,7 +89,7 @@ def search_web(search_query: str, num_results: int = 10) -> str:
         "Features:\n"
         "• HTML-to-text conversion with formatting preservation\n"
         "• Intelligent content extraction (removes ads, navigation)\n"
-        "• Parallel processing for multiple URLs\n"
+        "• Parallel processing for multiple URLs with async\n"
         "• Caching for improved performance\n"
         "• Automatic retry with exponential backoff\n\n"
         "Use cases: read webpage content, analyze articles, extract information from "
@@ -119,8 +103,8 @@ def search_web(search_query: str, num_results: int = 10) -> str:
         "parallel"
     ),
 )
-def fetch_page_content(urls: Union[str, List[str]]) -> str:
-    """Fetch and extract content from web pages"""
+async def fetch_page_content(urls: Union[str, List[str]]) -> str:
+    """Fetch and extract content from web pages using native async"""
     from .utils.tracking import (extract_tracking_from_url,
                                  log_selection_metrics)
 
@@ -138,7 +122,8 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
             f"Clean URL: {clean_url[:50]}..."
         )
 
-        return fetch_single_page_content(clean_url)
+        result = await fetch_single_page_content_async(clean_url)
+        return json.dumps(result, indent=2)
 
     # Log batch URL selections
     logger.info(f"📥 DEBUG: Batch URL fetch: {len(urls)} URLs")
@@ -147,46 +132,33 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
 
     log_selection_metrics(urls)
 
-    # Batch processing for multiple URLs
-    logger.info(f"Starting batch fetch for {len(urls)} URLs")
+    # Batch processing for multiple URLs using asyncio.gather
+    logger.info(f"Starting async batch fetch for {len(urls)} URLs")
 
-    results = []
-    threads = []
-    thread_results = {}
-
-    def fetch_url_thread(url_to_fetch: str, index: int):
+    async def fetch_with_tracking(url_to_fetch: str) -> dict:
+        """Fetch a single URL with tracking extraction and error handling"""
         try:
             # Extract tracking and get clean URL
             engine, search_id, clean_url = extract_tracking_from_url(url_to_fetch)
             logger.info(
-                f"📥 DEBUG: Thread {index} - Engine: {engine}, "
+                f"📥 DEBUG: Async fetch - Engine: {engine}, "
                 f"Clean URL: {clean_url[:50]}..."
             )
-            result_json = fetch_single_page_content(clean_url)
-            thread_results[index] = json.loads(result_json)
+            return await fetch_single_page_content_async(clean_url)
         except Exception as e:
-            thread_results[index] = {
+            return {
                 "url": url_to_fetch,
                 "success": False,
-                "error": f"Thread error: {str(e)}",
+                "error": f"Fetch error: {str(e)}",
                 "timestamp": datetime.now(UTC).isoformat() + "Z",
                 "cached": False,
             }
 
-    # Start threads for parallel fetching
-    for i, url_to_fetch in enumerate(urls):
-        thread = threading.Thread(target=fetch_url_thread, args=(url_to_fetch, i))
-        thread.start()
-        threads.append(thread)
-
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join(timeout=25)
-
-    # Collect results in order
-    for i in range(len(urls)):
-        if i in thread_results:
-            results.append(thread_results[i])
+    # Fetch all URLs concurrently with asyncio.gather
+    results = await asyncio.gather(
+        *[fetch_with_tracking(url) for url in urls],
+        return_exceptions=True  # Defensive: ensure all URLs attempted even if some fail
+    )
 
     batch_response = {
         "batch_request": True,
@@ -194,11 +166,11 @@ def fetch_page_content(urls: Union[str, List[str]]) -> str:
         "successful_fetches": sum(1 for r in results if r.get("success", False)),
         "failed_fetches": sum(1 for r in results if not r.get("success", False)),
         "timestamp": datetime.now(UTC).isoformat() + "Z",
-        "results": results,
+        "results": list(results),
     }
 
     logger.info(
-        f"Batch fetch completed: "
+        f"Async batch fetch completed: "
         f"{batch_response['successful_fetches']}/{len(urls)} successful"
     )
     return json.dumps(batch_response, indent=2)
