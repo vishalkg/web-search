@@ -1,8 +1,11 @@
 """HTTP utilities and request handling."""
 
+import aiohttp
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from .connection_pool import get_session
 
 # Constants
 DEFAULT_USER_AGENT = (
@@ -32,3 +35,24 @@ def make_request(url: str, timeout: int = REQUEST_TIMEOUT) -> requests.Response:
     response = requests_session.get(url, timeout=timeout)
     response.raise_for_status()
     return response
+
+
+async def make_request_async(url: str, timeout: int = REQUEST_TIMEOUT) -> str:
+    """
+    Make async HTTP request using global connection pool.
+
+    Args:
+        url: URL to fetch
+        timeout: Request timeout in seconds
+
+    Returns:
+        Response text content
+
+    Raises:
+        aiohttp.ClientError: On HTTP errors
+    """
+    session = get_session()
+    client_timeout = aiohttp.ClientTimeout(total=timeout)
+    async with session.get(url, timeout=client_timeout) as response:
+        response.raise_for_status()
+        return await response.text()

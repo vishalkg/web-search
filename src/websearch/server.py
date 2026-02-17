@@ -29,6 +29,7 @@ from . import __version__
 from .core.async_search import async_search_web_fallback as async_search_web
 from .core.content import fetch_single_page_content
 from .core.search import search_web_fallback as sync_search_web
+from .utils.connection_pool import close_pool
 from .utils.paths import get_log_file
 from .utils.rotation import get_rotated_file
 
@@ -246,6 +247,23 @@ def get_quota_status() -> str:
 
 def main():
     """Main entry point for the server"""
+    import atexit
+
+    # Register cleanup function
+    def cleanup():
+        """Clean shutdown of connection pool and resources."""
+        logger.info("Shutting down WebSearch MCP Server")
+        # Close pool synchronously at exit
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(close_pool())
+            else:
+                loop.run_until_complete(close_pool())
+        except Exception as e:
+            logger.warning(f"Error during cleanup: {e}")
+
+    atexit.register(cleanup)
     mcp.run()
 
 
