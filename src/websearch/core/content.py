@@ -47,7 +47,7 @@ def fetch_single_page_content(url: str) -> str:
 
     try:
         response = make_request(url, CONTENT_TIMEOUT)
-        text = extract_text_content(response.text)
+        text = extract_text_content(response.text, url=url)
         result = _success_result(url, text)
         content_cache.set(cache_key, result)
         logger.info(f"Successfully fetched {len(text)} characters from {url}")
@@ -88,7 +88,7 @@ async def fetch_single_page_content_async(url: str) -> dict:
 
     try:
         response_text = await make_request_async(url, CONTENT_TIMEOUT)
-        text = extract_text_content(response_text)
+        text = extract_text_content(response_text, url=url)
         result = _success_result(url, text)
         content_cache.set(cache_key, result)
         logger.info(f"Successfully fetched {len(text)} characters from {url}")
