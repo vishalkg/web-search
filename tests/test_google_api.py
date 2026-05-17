@@ -1,56 +1,58 @@
-"""Tests for Google Search API integration."""
+"""Tests for Google Custom Search API integration."""
 
 from unittest.mock import Mock, patch
 
 import pytest
 
-from src.websearch.engines.google_api import search_google_api
-from src.websearch.utils.quota import GoogleQuotaManager
+from websearch.engines.google_api import (async_search_google_api,
+                                          search_google_api)
 
 
-class TestGoogleAPI:
-    def test_quota_manager_new_day(self):
-        """Test quota manager resets on new day."""
-        manager = GoogleQuotaManager()
-        assert manager.can_make_request()
-
-    @patch("src.websearch.engines.google_api.build")
-    @patch("src.websearch.engines.google_api.quota_manager")
-    def test_search_google_api_success(self, mock_quota, mock_build):
-        """Test successful Google API search."""
-        # Mock quota manager
+class TestGoogleAPISync:
+    @patch("websearch.engines.google_api.unified_quota")
+    @patch.dict("os.environ", {"GOOGLE_CSE_API_KEY": "k", "GOOGLE_CSE_ID": "id"})
+    @patch("websearch.engines.google_api.build")
+    def test_success(self, mock_build, mock_quota):
         mock_quota.can_make_request.return_value = True
-
-        # Mock Google API response
         mock_service = Mock()
-        mock_cse = Mock()
-        mock_service.cse.return_value = mock_cse
-        mock_list = Mock()
-        mock_cse.list.return_value = mock_list
-        mock_list.execute.return_value = {
+        mock_service.cse.return_value.list.return_value.execute.return_value = {
             "items": [
                 {
-                    "title": "Test Title",
+                    "title": "T",
                     "link": "https://example.com",
-                    "snippet": "Test snippet",
+                    "snippet": "S",
                 }
             ]
         }
         mock_build.return_value = mock_service
 
-        results = search_google_api("test query", 10)
+        results = search_google_api("q", 5)
 
         assert len(results) == 1
-        assert results[0]["title"] == "Test Title"
-        assert results[0]["source"] == "Google"
-        mock_quota.record_request.assert_called_once()
+        assert results[0]["source"] == "google"
+        assert results[0]["url"] == "https://example.com"
+        assert results[0]["rank"] == 1
+        mock_quota.record_request.assert_called_once_with("google")
 
-    @patch("src.websearch.engines.google_api.quota_manager")
-    def test_search_google_api_quota_exhausted(self, mock_quota):
-        """Test Google API when quota is exhausted."""
+    @patch("websearch.engines.google_api.unified_quota")
+    @patch.dict("os.environ", {"GOOGLE_CSE_API_KEY": "k", "GOOGLE_CSE_ID": "id"})
+    def test_quota_exhausted(self, mock_quota):
         mock_quota.can_make_request.return_value = False
-
-        results = search_google_api("test query", 10)
-
+        results = search_google_api("q", 5)
         assert results == []
         mock_quota.record_request.assert_not_called()
+
+    @patch.dict("os.environ", {}, clear=True)
+    def test_no_credentials(self):
+        results = search_google_api("q", 5)
+        assert results == []
+
+
+class TestGoogleAPIAsync:
+    @pytest.mark.asyncio
+    @patch("websearch.engines.google_api.search_google_api")
+    async def test_async_wrapper_calls_sync(self, mock_sync):
+        mock_sync.return_value = [{"title": "T", "url": "u", "snippet": "s"}]
+        results = await async_search_google_api("q", 3)
+        assert results == mock_sync.return_value
+        mock_sync.assert_called_once_with("q", 3)

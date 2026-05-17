@@ -40,7 +40,9 @@ async def async_parallel_search(query: str, num_results: int) -> tuple:
     return ddg_results, bing_results, startpage_results, google_results, brave_results
 
 
-async def async_search_web_fallback(search_query: str, num_results: int = 10) -> str:
+async def async_search_web_fallback(
+    search_query: str, num_results: int = 10, force_refresh: bool = False
+) -> str:
     """
     Async search the web using 3-engine fallback system.
 
@@ -49,12 +51,12 @@ async def async_search_web_fallback(search_query: str, num_results: int = 10) ->
     - Bing -> DuckDuckGo (if Bing fails)
     - Brave (standalone)
     """
-    # Check cache first
-    cached_result = get_cached_search_result(search_query, num_results)
-    if cached_result:
-        return cached_result
+    if not force_refresh:
+        cached_result = get_cached_search_result(search_query, num_results)
+        if cached_result:
+            return cached_result
 
-    logger.info(f"🔍 Async fallback search: '{search_query}' (limit: {num_results})")
+    logger.info(f"Async fallback search: '{search_query}' (limit: {num_results})")
 
     # Perform async fallback parallel searches
     google_startpage_results, bing_ddg_results, brave_results = (
@@ -70,11 +72,10 @@ async def async_search_web_fallback(search_query: str, num_results: int = 10) ->
         num_results,
     )
 
-    # Cache and log
-    cache_search_result(search_query, num_results, response_json)
-
-    # Parse response to get unique count for logging
+    # Cache as parsed dict so cache_hit code can re-flag it as cached
     response_data = json.loads(response_json)
+    cache_search_result(search_query, num_results, response_data)
+
     unique_count = response_data.get("total_results", 0)
     log_search_completion(search_query, num_results, unique_count, is_async=True)
 

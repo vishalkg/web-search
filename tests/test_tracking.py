@@ -6,10 +6,10 @@ import tempfile
 
 import pytest
 
-from src.websearch.core.common import deduplicate_results
-from src.websearch.utils.tracking import (add_tracking_to_url,
-                                          extract_tracking_from_url,
-                                          generate_search_id)
+from websearch.utils.deduplication import deduplicate_results
+from websearch.utils.tracking import (add_tracking_to_url,
+                                      extract_tracking_from_url,
+                                      generate_search_id)
 
 
 class TestURLTracking:
@@ -37,13 +37,25 @@ class TestURLTracking:
     def test_extract_tracking_from_url(self):
         """Test extracting tracking info and cleaning URL."""
         original = "https://example.com/page?q=test&lang=en"
-        tracked = add_tracking_to_url(original, "ddg", "search789")
+        tracked = add_tracking_to_url(original, "duckduckgo", "search789")
 
         engine, search_id, clean_url = extract_tracking_from_url(tracked)
 
-        assert engine == "ddg"
+        assert engine == "duckduckgo"
         assert search_id == "search789"
         assert clean_url == original
+
+    @pytest.mark.parametrize(
+        "engine", ["duckduckgo", "bing", "startpage", "google", "brave"]
+    )
+    def test_round_trip_all_engines(self, engine):
+        """All five engine names round-trip through tracking encoding."""
+        original = "https://example.com/page?q=t"
+        tracked = add_tracking_to_url(original, engine, "sid42")
+        got_engine, got_sid, got_clean = extract_tracking_from_url(tracked)
+        assert got_engine == engine
+        assert got_sid == "sid42"
+        assert got_clean == original
 
     def test_generate_search_id_format(self):
         """Test search ID generation format."""
@@ -60,7 +72,7 @@ class TestURLTracking:
             metrics_file = os.path.join(temp_dir, "search-metrics.jsonl")
 
             # Patch the metrics file location
-            import src.websearch.utils.tracking as tracking_module
+            import websearch.utils.tracking as tracking_module
 
             original_init = tracking_module.log_selection_metrics
 
@@ -117,137 +129,92 @@ class TestURLTracking:
 
 
 class TestDeduplication:
-    """Test result deduplication with ranking."""
+    """Test result deduplication ranks by quality_score (descending)."""
 
     def test_deduplicate_different_urls(self):
-        """Test deduplication with completely different URLs."""
         results = [
-            {"url": "https://example.com", "title": "Example", "rank": 1},
-            {"url": "https://other.com", "title": "Other", "rank": 2},
+            {"url": "https://a.com", "title": "A", "quality_score": 5.0},
+            {"url": "https://b.com", "title": "B", "quality_score": 4.0},
         ]
-
         deduplicated = deduplicate_results(results, 10)
-
         assert len(deduplicated) == 2
-        assert deduplicated[0]["url"] == "https://example.com"
-        assert deduplicated[1]["url"] == "https://other.com"
+        assert deduplicated[0]["url"] == "https://a.com"
+        assert deduplicated[1]["url"] == "https://b.com"
 
-    def test_deduplicate_same_url_best_ranking_wins(self):
-        """Test deduplication where best ranking wins."""
+    def test_deduplicate_same_url_best_quality_wins(self):
         results = [
             {
                 "url": "https://example.com",
-                "title": "From DDG",
-                "rank": 3,
-                "_source_engine": "ddg",
+                "title": "Example",
+                "quality_score": 3.0,
+                "_source_engine": "duckduckgo",
             },
             {
                 "url": "https://example.com",
-                "title": "From Bing",
-                "rank": 1,
+                "title": "Example",
+                "quality_score": 9.0,
                 "_source_engine": "bing",
             },
-            {
-                "url": "https://example.com",
-                "title": "From Startpage",
-                "rank": 2,
-                "_source_engine": "startpage",
-            },
         ]
-
         deduplicated = deduplicate_results(results, 10)
-
+        # url+title dedup leaves only the highest-scored entry
         assert len(deduplicated) == 1
-        assert deduplicated[0]["_source_engine"] == "bing"  # Best rank (1)
-        assert deduplicated[0]["rank"] == 1
+        assert deduplicated[0]["_source_engine"] == "bing"
 
     def test_deduplicate_respects_num_results_limit(self):
-        """Test deduplication respects the num_results limit."""
         results = [
-            {"url": f"https://example{i}.com", "title": f"Example {i}", "rank": i}
-            for i in range(1, 6)
+            {"url": f"https://e{i}.com", "title": f"T{i}", "quality_score": 10 - i}
+            for i in range(5)
         ]
-
         deduplicated = deduplicate_results(results, 3)
-
         assert len(deduplicated) == 3
-        # Should be sorted by rank
-        assert deduplicated[0]["rank"] == 1
-        assert deduplicated[1]["rank"] == 2
-        assert deduplicated[2]["rank"] == 3
-
-    def test_deduplicate_handles_missing_rank(self):
-        """Test deduplication handles missing rank gracefully."""
-        results = [
-            {"url": "https://example.com", "title": "No rank"},
-            {"url": "https://other.com", "title": "Has rank", "rank": 1},
-        ]
-
-        deduplicated = deduplicate_results(results, 10)
-
-        assert len(deduplicated) == 2
-        # Result with rank should come first
-        assert deduplicated[0]["rank"] == 1
-        assert deduplicated[1].get("rank", 999) == 999
+        # Sorted by descending quality
+        assert deduplicated[0]["quality_score"] == 10
+        assert deduplicated[2]["quality_score"] == 8
 
 
 class TestEndToEndTracking:
     """End-to-end tests for the complete tracking flow."""
 
     def test_tracking_flow_with_deduplication(self):
-        """Test complete flow: add tracking, deduplicate, extract tracking."""
-        # Simulate search results from multiple engines
-        ddg_results = [
-            {"url": "https://example.com", "title": "Example DDG", "rank": 3}
+        # Simulate ranked candidates pre-scored by ranking algorithm
+        candidates = [
+            {
+                "url": "https://example.com",
+                "title": "Example DDG",
+                "quality_score": 5.0,
+                "_source_engine": "duckduckgo",
+            },
+            {
+                "url": "https://example.com",
+                "title": "Example DDG",
+                "quality_score": 9.0,
+                "_source_engine": "bing",
+            },
+            {
+                "url": "https://unique.com",
+                "title": "Unique Bing",
+                "quality_score": 7.0,
+                "_source_engine": "bing",
+            },
         ]
-        bing_results = [
-            {"url": "https://example.com", "title": "Example Bing", "rank": 1},
-            {"url": "https://unique.com", "title": "Unique Bing", "rank": 2},
-        ]
-        startpage_results = [
-            {"url": "https://example.com", "title": "Example Startpage", "rank": 2}
-        ]
 
-        # Add engine info (simulating format_search_response logic)
-        all_results = []
-        for result in ddg_results:
-            r = result.copy()
-            r["_source_engine"] = "ddg"
-            all_results.append(r)
-
-        for result in bing_results:
-            r = result.copy()
-            r["_source_engine"] = "bing"
-            all_results.append(r)
-
-        for result in startpage_results:
-            r = result.copy()
-            r["_source_engine"] = "startpage"
-            all_results.append(r)
-
-        # Deduplicate (best ranking wins)
-        deduplicated = deduplicate_results(all_results, 10)
-
-        # Should have 2 unique URLs, with bing winning for example.com
+        deduplicated = deduplicate_results(candidates, 10)
         assert len(deduplicated) == 2
 
-        # Find the example.com result
-        example_result = next(r for r in deduplicated if "example.com" in r["url"])
-        assert example_result["_source_engine"] == "bing"  # Best rank (1)
+        example = next(r for r in deduplicated if "example.com" in r["url"])
+        assert example["_source_engine"] == "bing"
 
-        # Add tracking
         search_id = "test_search_123"
         for result in deduplicated:
             engine = result.pop("_source_engine")
             result["url"] = add_tracking_to_url(result["url"], engine, search_id)
 
-        # Extract tracking (simulating fetch_page_content)
         for result in deduplicated:
             engine, sid, clean_url = extract_tracking_from_url(result["url"])
             assert sid == search_id
-
             if "example.com" in clean_url:
-                assert engine == "bing"  # Should be attributed to bing
+                assert engine == "bing"
 
 
 if __name__ == "__main__":

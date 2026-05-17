@@ -48,5 +48,5 @@ def deduplicate_results(
         result["rank"] = len(final_results) + 1
         final_results.append(result)
 
-    logger.info(f"🔄 Deduplicated {len(all_results)} → {len(final_results)} results")
+    logger.info(f"Deduplicated {len(all_results)} → {len(final_results)} results")
     return final_results

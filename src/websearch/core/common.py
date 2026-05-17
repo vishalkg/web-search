@@ -35,7 +35,7 @@ def format_fallback_search_response(
     from ..utils.tracking import generate_search_id, log_search_response
 
     logger.info(
-        f"🔍 Fallback results - Google/Startpage: {len(google_startpage_results)}, "
+        f"Fallback results - Google/Startpage: {len(google_startpage_results)}, "
         f"Bing/DDG: {len(bing_ddg_results)}, Brave: {len(brave_results)}"
     )
 
@@ -86,10 +86,10 @@ def format_search_response(
 
     # Generate search ID for tracking
     search_id = generate_search_id()
-    logger.info(f"🔍 Generated search_id: {search_id}")
+    logger.info(f"Generated search_id: {search_id}")
 
     logger.info(
-        f"🔍 Input results - DDG: {len(ddg_results)}, "
+        f"Input results - DDG: {len(ddg_results)}, "
         f"Bing: {len(bing_results)}, Startpage: {len(startpage_results)}, "
         f"Google: {len(google_results)}, Brave: {len(brave_results)}"
     )
@@ -106,7 +106,7 @@ def format_search_response(
 
     # Get engine distribution for monitoring
     distribution = get_engine_distribution(ranked_results)
-    logger.info(f"🔍 Engine distribution: {distribution}")
+    logger.info(f"Engine distribution: {distribution}")
 
     # Log search response before adding tracking URLs
     log_search_response(search_query, ranked_results, search_id)
@@ -118,7 +118,7 @@ def format_search_response(
         tracked_url = add_tracking_to_url(original_url, engine, search_id)
         result["url"] = tracked_url
         logger.info(
-            f"🔍 Result {i+1} - Engine: {engine}, "
+            f"Result {i+1} - Engine: {engine}, "
             f"Quality: {result['quality_score']:.1f}"
         )
 
