@@ -61,7 +61,7 @@ def quality_first_ranking_fallback(
     # Deduplicate and rank
     final_results = deduplicate_results(scored_candidates, num_results)
 
-    logger.info(f"🏆 Final fallback ranking: {len(final_results)} results")
+    logger.info(f"Final fallback ranking: {len(final_results)} results")
     return final_results
 
 
@@ -173,14 +173,15 @@ def _deduplicate_by_quality(results: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 
 def get_engine_distribution(results: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Get distribution of results by engine for monitoring"""
-    distribution = {"duckduckgo": 0, "bing": 0, "startpage": 0}
-
+    """Get distribution of results by engine for monitoring."""
+    distribution: Dict[str, int] = {
+        "duckduckgo": 0,
+        "bing": 0,
+        "startpage": 0,
+        "google": 0,
+        "brave": 0,
+    }
     for result in results:
         engine = result.get("source", "unknown")
-        if engine in distribution:
-            distribution[engine] += 1
-        else:
-            distribution["unknown"] = distribution.get("unknown", 0) + 1
-
+        distribution[engine] = distribution.get(engine, 0) + 1
     return distribution

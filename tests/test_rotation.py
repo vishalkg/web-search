@@ -4,7 +4,7 @@ import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from src.websearch.utils.rotation import get_rotated_file
+from websearch.utils.rotation import get_rotated_file
 
 
 class TestRotation:

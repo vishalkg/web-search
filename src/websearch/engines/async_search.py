@@ -9,6 +9,7 @@ from urllib.parse import quote_plus
 import aiohttp
 from bs4 import BeautifulSoup
 
+from ..config import RATE_LIMITS
 from ..utils.connection_pool import get_session
 from .brave_api import async_search_brave_api
 from .google_api import async_search_google_api
@@ -17,36 +18,35 @@ from .parsers import (parse_bing_results, parse_duckduckgo_results,
 
 logger = logging.getLogger(__name__)
 
-# Rate limiting: base delay + random jitter (min, max) seconds
-RATE_LIMITS = {
-    "duckduckgo": (1.5, 3.0),  # 1.5-3.0s random delay
-    "bing": (1.0, 2.5),  # 1.0-2.5s random delay
-    "startpage": (2.0, 4.0),  # 2.0-4.0s random delay
+# Per-engine state guarded by a per-engine lock so concurrent searches do
+# not race on the last-request timestamp. Locks are pre-populated at import
+# so coroutines never have to construct one (which would itself need a
+# running loop on Python <3.10 and creates a get-then-set race).
+_last_request_time: Dict[str, float] = {}
+_rate_limit_locks: Dict[str, asyncio.Lock] = {
+    name: asyncio.Lock() for name in RATE_LIMITS
 }
-
-# Track last request time per engine
-_last_request_time = {}
 
 
 async def _rate_limit_delay(engine_name: str) -> None:
-    """Apply rate limiting delay with random jitter"""
-    if engine_name not in RATE_LIMITS:
+    """Apply rate limiting delay with random jitter, serialized per engine."""
+    lock = _rate_limit_locks.get(engine_name)
+    if lock is None:
         return
 
-    current_time = asyncio.get_event_loop().time()
-    last_time = _last_request_time.get(engine_name, 0)
-    min_delay, max_delay = RATE_LIMITS[engine_name]
+    async with lock:
+        current_time = asyncio.get_event_loop().time()
+        last_time = _last_request_time.get(engine_name, 0)
+        min_delay, max_delay = RATE_LIMITS[engine_name]
+        random_delay = random.uniform(min_delay, max_delay)
 
-    # Random delay between min and max
-    random_delay = random.uniform(min_delay, max_delay)
+        time_since_last = current_time - last_time
+        if time_since_last < random_delay:
+            delay = random_delay - time_since_last
+            logger.info(f"Rate limiting {engine_name}: waiting {delay:.1f}s")
+            await asyncio.sleep(delay)
 
-    time_since_last = current_time - last_time
-    if time_since_last < random_delay:
-        delay = random_delay - time_since_last
-        logger.info(f"Rate limiting {engine_name}: waiting {delay:.1f}s")
-        await asyncio.sleep(delay)
-
-    _last_request_time[engine_name] = asyncio.get_event_loop().time()
+        _last_request_time[engine_name] = asyncio.get_event_loop().time()
 
 
 async def async_search_engine_base(

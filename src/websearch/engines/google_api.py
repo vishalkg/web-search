@@ -55,6 +55,7 @@ def search_google_api(query: str, num_results: int) -> List[Dict[str, Any]]:
                     "url": item.get("link", ""),
                     "snippet": item.get("snippet", ""),
                     "source": "google",
+                    "rank": len(results) + 1,
                 }
             )
 

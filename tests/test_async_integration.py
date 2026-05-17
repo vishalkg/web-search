@@ -21,8 +21,9 @@ from websearch.engines.async_search import (async_search_bing,
 from websearch.utils.cache import SimpleCache, content_cache, search_cache
 
 
+@pytest.mark.integration
 class TestAsyncWebSearchIntegration:
-    """Async integration tests for web search functionality"""
+    """Async integration tests — hit live engines and httpbin.org."""
 
     def setup_method(self):
         """Clear caches before each test"""
@@ -42,7 +43,7 @@ class TestAsyncWebSearchIntegration:
             assert "snippet" in result
             assert "source" in result
             assert "rank" in result
-            assert result["source"] == "DuckDuckGo"
+            assert result["source"] == "duckduckgo"
             assert result["rank"] >= 1
 
     @pytest.mark.asyncio
@@ -58,7 +59,7 @@ class TestAsyncWebSearchIntegration:
             assert "snippet" in result
             assert "source" in result
             assert "rank" in result
-            assert result["source"] == "Bing"
+            assert result["source"] == "bing"
             assert result["rank"] >= 1
 
     @pytest.mark.asyncio
@@ -74,7 +75,7 @@ class TestAsyncWebSearchIntegration:
             assert "snippet" in result
             assert "source" in result
             assert "rank" in result
-            assert result["source"] == "Startpage"
+            assert result["source"] == "startpage"
             assert result["rank"] >= 1
 
     @pytest.mark.asyncio
@@ -117,7 +118,7 @@ class TestAsyncWebSearchIntegration:
     def test_batch_page_fetch_multiple_urls(self):
         """Test batch fetch logic with multiple URLs"""
         import threading
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         urls = ["https://httpbin.org/html", "https://httpbin.org/json"]
         results = []
@@ -133,7 +134,7 @@ class TestAsyncWebSearchIntegration:
                     "url": url_to_fetch,
                     "success": False,
                     "error": f"Thread error: {str(e)}",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                     "cached": False,
                 }
 
@@ -320,7 +321,7 @@ class TestMockedFunctionality:
             ]
 
             # Test the deduplication logic manually
-            from websearch.core.common import deduplicate_results
+            from websearch.utils.deduplication import deduplicate_results
 
             all_results = (
                 mock_ddg.return_value + mock_bing.return_value + mock_sp.return_value
@@ -335,13 +336,13 @@ class TestMockedFunctionality:
 
     def test_error_handling(self):
         """Test error handling in page fetch"""
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         import requests
 
         result = {
             "url": "https://nonexistent.example",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
 
         # Simulate request error
@@ -365,7 +366,7 @@ class TestMockedFunctionality:
     def test_batch_error_handling(self):
         """Test error handling in batch fetch logic"""
         import threading
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         urls = [
             "https://httpbin.org/html",
@@ -384,7 +385,7 @@ class TestMockedFunctionality:
                     "url": url_to_fetch,
                     "success": False,
                     "error": f"Thread error: {str(e)}",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                     "cached": False,
                 }
 

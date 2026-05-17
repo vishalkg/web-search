@@ -9,7 +9,9 @@ from typing import List, Union
 
 from fastmcp import FastMCP
 
+from .config import MAX_BATCH_URLS, MAX_NUM_RESULTS
 from .utils.paths import find_env_file
+from .utils.url_validation import URLValidationError, require_valid_url
 
 # Load environment variables from .env file
 try:
@@ -47,131 +49,167 @@ mcp = FastMCP("WebSearch")
 logger.info(f"WebSearch MCP server v{__version__} starting with async optimizations")
 
 
+def _clamp_num_results(num_results: int) -> int:
+    if not isinstance(num_results, int) or num_results < 1:
+        return 1
+    return min(num_results, MAX_NUM_RESULTS)
+
+
+def _build_url_error(url: str, reason: str) -> dict:
+    return {
+        "url": url,
+        "success": False,
+        "error": f"URL rejected: {reason}",
+        "error_type": "validation",
+        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "cached": False,
+    }
+
+
 @mcp.tool(
     name="search_web",
     description=(
         "Search across multiple search engines (DuckDuckGo, Bing, Startpage, "
-        "Google, Brave) with intelligent 3-engine fallback system and parallel "
-        "processing. Returns comprehensive results with titles, URLs, and snippets "
-        "from multiple sources.\n\n"
+        "Google, Brave) with a 3-engine fallback system and parallel execution. "
+        "Returns titles, URLs, and snippets from multiple sources.\n\n"
         "Fallback System:\n"
-        "• Google API → Startpage fallback (if quota exhausted)\n"
-        "• Bing → DuckDuckGo fallback (if blocked/failed)\n"
-        "• Brave API (standalone)\n\n"
-        "Features:\n"
-        "• 3-engine fallback with result aggregation\n"
-        "• Intelligent caching for improved performance\n"
-        "• Parallel execution for optimal speed\n"
-        "• Comprehensive error handling and retry logic\n"
-        "• Rate limiting and respectful crawling\n\n"
-        "Use cases: research topics, find information, discover websites, get current "
-        "news, find documentation, verify information, search online, explore "
-        "subjects.\n\n"
-        "Example usage:\n"
-        'search_web("quantum computing applications", 5) - returns 5 search results '
-        "about quantum computing\n"
-        'search_web("latest AI research papers", 10) - finds recent AI research\n'
-        'search_web("how to implement binary search", 7) - searches for binary search '
-        "tutorials"
+        "- Google API -> Startpage fallback (if quota exhausted)\n"
+        "- Bing -> DuckDuckGo fallback (if blocked/failed)\n"
+        "- Brave API (standalone)\n\n"
+        "Parameters:\n"
+        "- search_query (str): the query string\n"
+        f"- num_results (int, 1-{MAX_NUM_RESULTS}, default 10): max results\n"
+        "- force_refresh (bool, default False): bypass the search cache\n\n"
+        "Returns a JSON string with: query, total_results, sources (per-engine "
+        "counts), engine_distribution, results (list of {title, url, snippet, "
+        "source, quality_score, rank}), and cached (bool)."
     ),
 )
-async def search_web(search_query: str, num_results: int = 10) -> str:
-    """Perform a web search using multiple search engines with native async"""
-    return await async_search_web(search_query, num_results)
+async def search_web(
+    search_query: str, num_results: int = 10, force_refresh: bool = False
+) -> str:
+    """Perform a web search using multiple search engines with native async."""
+    if not isinstance(search_query, str) or not search_query.strip():
+        return json.dumps(
+            {
+                "error": "search_query must be a non-empty string",
+                "error_type": "validation",
+            }
+        )
+    return await async_search_web(
+        search_query, _clamp_num_results(num_results), force_refresh=force_refresh
+    )
 
 
 @mcp.tool(
     name="fetch_page_content",
     description=(
-        "Extract clean, readable text content from web pages with intelligent parsing "
-        "and parallel processing. Supports single URLs or batch processing of multiple "
-        "URLs.\n\n"
-        "Features:\n"
-        "• HTML-to-text conversion with formatting preservation\n"
-        "• Intelligent content extraction (removes ads, navigation)\n"
-        "• Parallel processing for multiple URLs with async\n"
-        "• Caching for improved performance\n"
-        "• Automatic retry with exponential backoff\n\n"
-        "Use cases: read webpage content, analyze articles, extract information from "
-        "URLs, get full text from search results, read documentation, access content "
-        "from websites.\n\n"
-        "Example usage:\n"
-        'fetch_page_content("https://en.wikipedia.org/wiki/Machine_learning") - '
-        "extracts text from Wikipedia\n"
-        'fetch_page_content(["https://docs.python.org/3/tutorial", '
-        '"https://docs.python.org/3/library"]) - batch processing multiple URLs in '
-        "parallel"
+        "Extract clean, readable text content from web pages. Accepts a single URL "
+        "string or a list of URLs (up to "
+        f"{MAX_BATCH_URLS}); batch requests fetch concurrently.\n\n"
+        "Only http/https URLs are accepted. Requests to private, loopback, or cloud "
+        "metadata addresses are rejected. Each result includes success, content (or "
+        "error_type/error), content_length, truncated, cached, and timestamp.\n\n"
+        "Use this to read article text, documentation, or full search-result pages."
     ),
 )
 async def fetch_page_content(urls: Union[str, List[str]]) -> str:
-    """Fetch and extract content from web pages using native async"""
+    """Fetch and extract content from web pages using native async."""
     from .utils.tracking import (extract_tracking_from_url,
                                  log_selection_metrics)
 
-    # Handle single URL
     if isinstance(urls, str):
-        logger.info(f"📥 DEBUG: Single URL fetch: {urls[:100]}...")
-
-        # Log single URL selection
+        logger.debug(f"Single URL fetch: {urls[:100]}")
         log_selection_metrics([urls])
 
-        # Extract tracking and get clean URL
         engine, search_id, clean_url = extract_tracking_from_url(urls)
-        logger.info(
-            f"📥 DEBUG: Extracted - Engine: {engine}, Search ID: {search_id}, "
-            f"Clean URL: {clean_url[:50]}..."
+        logger.debug(
+            f"Extracted - Engine: {engine}, Search ID: {search_id}, "
+            f"Clean URL: {clean_url[:50]}"
         )
+
+        try:
+            require_valid_url(clean_url)
+        except URLValidationError as exc:
+            return json.dumps(_build_url_error(clean_url, str(exc)), indent=2)
 
         result = await fetch_single_page_content_async(clean_url)
         return json.dumps(result, indent=2)
 
-    # Log batch URL selections
-    logger.info(f"📥 DEBUG: Batch URL fetch: {len(urls)} URLs")
-    for i, url in enumerate(urls):
-        logger.info(f"📥 DEBUG: URL {i+1}: {url[:100]}...")
+    if not isinstance(urls, list) or not urls:
+        return json.dumps(
+            {
+                "error": "urls must be a non-empty list or string",
+                "error_type": "validation",
+            }
+        )
+    if len(urls) > MAX_BATCH_URLS:
+        return json.dumps(
+            {
+                "error": f"too many URLs (max {MAX_BATCH_URLS})",
+                "error_type": "validation",
+                "received": len(urls),
+            }
+        )
 
+    logger.info(f"Batch URL fetch: {len(urls)} URLs")
     log_selection_metrics(urls)
 
-    # Batch processing for multiple URLs using asyncio.gather
-    logger.info(f"Starting async batch fetch for {len(urls)} URLs")
-
     async def fetch_with_tracking(url_to_fetch: str) -> dict:
-        """Fetch a single URL with tracking extraction and error handling"""
+        """Fetch a single URL with tracking extraction and error handling."""
         try:
-            # Extract tracking and get clean URL
             engine, search_id, clean_url = extract_tracking_from_url(url_to_fetch)
-            logger.info(
-                f"📥 DEBUG: Async fetch - Engine: {engine}, "
-                f"Clean URL: {clean_url[:50]}..."
+            logger.debug(
+                f"Async fetch - Engine: {engine}, Clean URL: {clean_url[:50]}"
             )
+            try:
+                require_valid_url(clean_url)
+            except URLValidationError as exc:
+                return _build_url_error(clean_url, str(exc))
             return await fetch_single_page_content_async(clean_url)
         except Exception as e:
             return {
                 "url": url_to_fetch,
                 "success": False,
                 "error": f"Fetch error: {str(e)}",
-                "timestamp": datetime.now(UTC).isoformat() + "Z",
+                "error_type": "general",
+                "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 "cached": False,
             }
 
-    # Fetch all URLs concurrently with asyncio.gather
-    results = await asyncio.gather(
+    raw_results = await asyncio.gather(
         *[fetch_with_tracking(url) for url in urls],
-        return_exceptions=True  # Defensive: ensure all URLs attempted even if some fail
+        return_exceptions=True,
     )
+    # Convert any exception escapees to error dicts so one bad URL never sinks
+    # the batch. fetch_with_tracking already catches Exception, but BaseException
+    # (CancelledError on older 3.8s, etc.) can still slip past.
+    results: list = []
+    for url, raw in zip(urls, raw_results):
+        if isinstance(raw, BaseException):
+            results.append({
+                "url": url,
+                "success": False,
+                "error": f"Unhandled error: {raw}",
+                "error_type": "general",
+                "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                "cached": False,
+            })
+        else:
+            results.append(raw)
 
+    successful = sum(1 for r in results if r.get("success", False))
     batch_response = {
         "batch_request": True,
         "total_urls": len(urls),
-        "successful_fetches": sum(1 for r in results if r.get("success", False)),
-        "failed_fetches": sum(1 for r in results if not r.get("success", False)),
-        "timestamp": datetime.now(UTC).isoformat() + "Z",
+        "successful_fetches": successful,
+        "failed_fetches": len(urls) - successful,
+        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "results": list(results),
     }
 
     logger.info(
-        f"Async batch fetch completed: "
-        f"{batch_response['successful_fetches']}/{len(urls)} successful"
+        f"Async batch fetch completed: {successful}/{len(urls)} successful"
     )
     return json.dumps(batch_response, indent=2)
 
@@ -179,22 +217,17 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
 @mcp.tool(
     name="get_quota_status",
     description=(
-        "Display current API quota usage for search engines. Shows used/limit "
-        "and quota period (daily/monthly) for Google and Brave APIs.\n\n"
-        "Returns quota information including:\n"
-        "• Current usage count\n"
-        "• Total quota limit\n"
-        "• Quota period (daily for Google, monthly for Brave)\n"
-        "• Percentage used\n"
-        "• Remaining quota\n\n"
-        "Use this to monitor API usage and avoid hitting quota limits."
+        "Display current API quota usage for Google Custom Search and Brave Search. "
+        "Returns per-service used/limit/period/percentage_used/remaining/status. "
+        "Use this to monitor API usage before issuing quota-bound search calls."
     ),
 )
 def get_quota_status() -> str:
-    """Get current quota status for all search APIs"""
+    """Get current quota status for all search APIs."""
     from .utils.unified_quota import unified_quota
 
-    quota_status = {"timestamp": datetime.now(UTC).isoformat() + "Z", "services": {}}
+    timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    quota_status = {"timestamp": timestamp, "services": {}}
 
     for service in ["google", "brave"]:
         usage = unified_quota.get_usage(service)
@@ -218,17 +251,22 @@ def get_quota_status() -> str:
 
 
 def main():
-    """Main entry point for the server"""
+    """Main entry point for the server."""
     import atexit
 
-    # Register cleanup function
     def cleanup():
-        """Clean shutdown of connection pool and resources."""
+        """Clean shutdown of connection pool. Best-effort: atexit may run after
+        the FastMCP loop has already torn down."""
         logger.info("Shutting down WebSearch MCP Server")
-        # Close pool synchronously at exit
         try:
-            loop = asyncio.get_event_loop()
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+            if loop.is_closed():
+                return
             if loop.is_running():
+                # FastMCP is still draining; schedule and let it finish
                 loop.create_task(close_pool())
             else:
                 loop.run_until_complete(close_pool())

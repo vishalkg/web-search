@@ -12,8 +12,15 @@ from .rotation import get_rotated_file
 
 logger = logging.getLogger(__name__)
 
-# Engine code mapping
-ENGINE_CODES = {"ddg": "d", "bing": "b", "startpage": "s"}
+# Engine code mapping (single-character codes for compact URL params)
+# Keys must match the lowercase `source` field emitted by engine parsers.
+ENGINE_CODES = {
+    "duckduckgo": "d",
+    "bing": "b",
+    "startpage": "s",
+    "google": "g",
+    "brave": "r",
+}
 
 
 def log_search_response(search_query: str, results: List[Dict], search_id: str) -> None:
@@ -36,7 +43,7 @@ def log_search_response(search_query: str, results: List[Dict], search_id: str) 
 
     response_data = {
         "event_type": "search_response",
-        "timestamp": datetime.now(UTC).isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "search_id": search_id,
         "query": search_query,
         "total_results": len(results),

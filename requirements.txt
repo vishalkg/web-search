@@ -1,4 +1,11 @@
-fastmcp
-requests
-beautifulsoup4
-google-api-python-client
+# Runtime dependencies. pyproject.toml is the source of truth.
+# This file is provided for environments that install via pip directly
+# (e.g. CI without poetry). Versions mirror pyproject.toml lower bounds.
+fastmcp>=3.3.1,<4.0
+requests>=2.34.2,<3.0
+beautifulsoup4>=4.14.3,<5.0
+aiohttp>=3.13.5,<4.0
+lxml>=6.1.0,<7.0
+python-dotenv>=1.2.2,<2.0
+google-api-python-client>=2.196.0,<3.0
+platformdirs>=4.9.6,<5.0

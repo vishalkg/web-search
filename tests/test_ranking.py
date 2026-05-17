@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.websearch.core.ranking import (get_engine_distribution,
-                                        quality_first_ranking)
+from websearch.core.ranking import (get_engine_distribution,
+                                    quality_first_ranking)
 
 
 def test_quality_first_ranking():
