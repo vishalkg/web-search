@@ -9,3 +9,4 @@ lxml>=6.1.0,<7.0
 python-dotenv>=1.2.2,<2.0
 google-api-python-client>=2.196.0,<3.0
 platformdirs>=4.9.6,<5.0
+trafilatura>=2.0.0,<3.0
