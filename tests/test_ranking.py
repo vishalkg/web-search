@@ -107,3 +107,78 @@ def test_deduplication_keeps_best():
     # Should keep the higher quality one (Bing with longer content)
     assert results[0]["source"] == "bing"
     assert "Much longer" in results[0]["title"]
+
+
+def test_canonical_dedup_collapses_tracking_variants():
+    """Same article reached via different tracking-param URLs should dedup."""
+    ddg_results = [
+        {
+            "url": "https://example.com/article?utm_source=ddg",
+            "title": "The Article",
+            "snippet": "x",
+        }
+    ]
+    bing_results = [
+        {
+            "url": "https://www.example.com/article",
+            "title": "The Article",
+            "snippet": "x",
+        }
+    ]
+    results = quality_first_ranking(ddg_results, bing_results, [], [], [], 5)
+    assert len(results) == 1
+
+
+def test_query_relevance_boosts_keyword_match():
+    """Result with all query keywords beats a same-rank result with none."""
+    ddg_results = [
+        {
+            "url": "https://noise.com",
+            "title": "Cooking recipes",
+            "snippet": "How to bake bread",
+        },
+        {
+            "url": "https://relevant.com",
+            "title": "Python async tutorial",
+            "snippet": "Complete guide to python async",
+        },
+    ]
+    results = quality_first_ranking(
+        ddg_results, [], [], [], [], 5, query="python async"
+    )
+    # Relevant result must rank above noise.com despite same engine_rank tier
+    assert results[0]["url"] == "https://relevant.com"
+
+
+def test_freshness_boosts_recent_content():
+    """Same-rank results from different engines: fresh > stale."""
+    # Place the stale one as ddg rank-1 and the fresh one as bing rank-1 so
+    # the engine_rank base score is identical and the freshness signal is
+    # the deciding factor.
+    ddg_results = [
+        {
+            "url": "https://stale.com",
+            "title": "Python async tutorial",
+            "snippet": "Python async tutorial published Jan 1, 2018",
+        }
+    ]
+    bing_results = [
+        {
+            "url": "https://fresh.com",
+            "title": "Python async tutorial",
+            "snippet": "Python async tutorial published 2 days ago",
+        }
+    ]
+    results = quality_first_ranking(
+        ddg_results, bing_results, [], [], [], 5, query="python async tutorial"
+    )
+    # Same titles → title-dedup keeps best-scored. Fresh wins on freshness boost.
+    assert results[0]["url"] == "https://fresh.com"
+
+
+def test_query_blind_call_works():
+    """Legacy callers without query argument still produce reasonable scores."""
+    ddg_results = [{"url": "https://x.com", "title": "x", "snippet": "x"}]
+    results = quality_first_ranking(ddg_results, [], [], [], [], 5)
+    assert len(results) == 1
+    assert results[0]["quality_score"] > 0

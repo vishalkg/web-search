@@ -1,8 +1,16 @@
-"""Result deduplication utilities."""
+"""Result deduplication utilities.
+
+URL deduplication uses :func:`url_normalize.canonicalize_url` so trivially
+different URLs (tracking params, ``www.`` prefix, scheme differences,
+trailing slashes) collapse to the same dedup key. Title comparison stays
+naive (lowercased + stripped) to catch cases where the same article appears
+under slightly different URLs.
+"""
 
 import logging
 from typing import Any, Dict, List
-from urllib.parse import urlparse
+
+from .url_normalize import canonicalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +22,7 @@ def deduplicate_results(
     if not all_results:
         return []
 
-    # Sort by quality score (descending)
+    # Sort by quality score (descending) so the best variant of a duplicate wins
     sorted_results = sorted(
         all_results, key=lambda x: x.get("quality_score", 0), reverse=True
     )
@@ -30,21 +38,16 @@ def deduplicate_results(
         url = result.get("url", "")
         title = result.get("title", "").lower().strip()
 
-        # Normalize URL for comparison
-        try:
-            parsed = urlparse(url)
-            normalized_url = f"{parsed.netloc}{parsed.path}".lower()
-        except Exception:
-            normalized_url = url.lower()
+        canonical = canonicalize_url(url) if url else ""
 
-        # Skip if we've seen this URL or very similar title
-        if normalized_url in seen_urls or title in seen_titles:
+        if (canonical and canonical in seen_urls) or (title and title in seen_titles):
             continue
 
-        seen_urls.add(normalized_url)
-        seen_titles.add(title)
+        if canonical:
+            seen_urls.add(canonical)
+        if title:
+            seen_titles.add(title)
 
-        # Add rank for final results
         result["rank"] = len(final_results) + 1
         final_results.append(result)
 

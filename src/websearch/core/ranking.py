@@ -1,9 +1,11 @@
 """Optimized result ranking with quality-first algorithm and diversity guarantees."""
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..utils.deduplication import deduplicate_results
+from ..utils.relevance import freshness_score, query_overlap
+from ..utils.url_normalize import canonicalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +15,13 @@ def quality_first_ranking_fallback(
     bing_ddg_results: List[Dict[str, Any]],
     brave_results: List[Dict[str, Any]],
     num_results: int,
+    query: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Quality-first ranking for 3-engine fallback system."""
+    """Quality-first ranking for 3-engine fallback system.
+
+    ``query``, when provided, enables query-keyword-overlap and freshness
+    contributions to ``quality_score``.
+    """
 
     def prepare_engine_results(
         results: List[Dict[str, Any]], engine: str
@@ -54,7 +61,9 @@ def quality_first_ranking_fallback(
     # Apply quality scoring and deduplication
     scored_candidates = []
     for candidate in all_candidates:
-        score = _calculate_quality_score(candidate, candidate.get("engine_rank", 1))
+        score = _calculate_quality_score(
+            candidate, candidate.get("engine_rank", 1), query=query
+        )
         candidate["quality_score"] = score
         scored_candidates.append(candidate)
 
@@ -72,13 +81,17 @@ def quality_first_ranking(
     google_results: List[Dict[str, Any]],
     brave_results: List[Dict[str, Any]],
     num_results: int,
+    query: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """
-    Quality-first candidate pool algorithm:
-    1. Take top 4 results from each engine
-    2. Deduplicate keeping best-ranked version
-    3. Sort by original engine ranking
-    4. Return top num_results
+    """Quality-first candidate pool algorithm.
+
+    1. Take top 4 results from each engine.
+    2. Score each with engine-rank base + query-overlap + freshness.
+    3. Deduplicate by canonical URL keeping highest-scored version.
+    4. Sort by quality score descending and return top ``num_results``.
+
+    ``query`` is optional for backward compatibility; passing it enables
+    query-relevance and freshness contributions to ``quality_score``.
     """
     # Take top 4 from each engine for candidate pool
     candidates_per_engine = min(4, num_results // 2)
@@ -92,7 +105,9 @@ def quality_first_ranking(
             result_copy = result.copy()
             result_copy["source"] = engine
             result_copy["engine_rank"] = i + 1
-            result_copy["quality_score"] = _calculate_quality_score(result_copy, i + 1)
+            result_copy["quality_score"] = _calculate_quality_score(
+                result_copy, i + 1, query=query
+            )
             prepared.append(result_copy)
         return prepared
 
@@ -135,39 +150,63 @@ def quality_first_ranking(
     return final_results
 
 
-def _calculate_quality_score(result: Dict[str, Any], engine_rank: int) -> float:
-    """Calculate quality score based on engine ranking and content indicators"""
-    # Base score from engine ranking (higher rank = lower score)
+def _calculate_quality_score(
+    result: Dict[str, Any], engine_rank: int, query: Optional[str] = None
+) -> float:
+    """Calculate quality score from engine rank, content, query relevance, freshness.
+
+    Components (roughly equal-weight when fully active):
+      - base_score: engine_rank position (10 -> 0 across ranks 1..6)
+      - content_bonus: ±1 for substantial vs sparse title/snippet
+      - relevance_bonus: 0..+4 from query-keyword overlap on title+snippet
+      - freshness_bonus: 0..+2 exponential decay on dates parsed from snippet
+
+    Query-blind callers (legacy paths) get the original score unchanged.
+    """
     base_score = 10.0 - (engine_rank - 1) * 2.0
 
-    # Content quality indicators
-    title_length = len(result.get("title", ""))
-    snippet_length = len(result.get("snippet", ""))
+    title = result.get("title", "")
+    snippet = result.get("snippet", "")
+    title_length = len(title)
+    snippet_length = len(snippet)
 
-    # Bonus for substantial content
     content_bonus = 0.0
     if title_length > 20:
         content_bonus += 0.5
     if snippet_length > 50:
         content_bonus += 0.5
-
-    # Penalty for very short content
     if title_length < 10 or snippet_length < 20:
         content_bonus -= 1.0
 
-    return max(0.1, base_score + content_bonus)
+    relevance_bonus = 0.0
+    freshness_bonus = 0.0
+    if query:
+        overlap = query_overlap(query, title, snippet)
+        relevance_bonus = overlap * 4.0
+        # Freshness from snippet+title text. Engines vary on where they put
+        # the publication date; checking both catches "Python 3.12 released
+        # — March 2024" style titles. Half-life of one year keeps multi-
+        # year-old articles still relevant for evergreen queries.
+        freshness_bonus = freshness_score(f"{title} {snippet}") * 2.0
+
+    return max(
+        0.1, base_score + content_bonus + relevance_bonus + freshness_bonus
+    )
 
 
 def _deduplicate_by_quality(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Remove duplicates keeping the highest quality version"""
-    url_to_best = {}
+    """Remove duplicates keeping the highest quality version (canonical key)."""
+    url_to_best: Dict[str, Dict[str, Any]] = {}
 
     for result in results:
-        url = result["url"]
+        url = result.get("url", "")
+        if not url:
+            continue
+        key = canonicalize_url(url) or url
         quality_score = result["quality_score"]
 
-        if url not in url_to_best or quality_score > url_to_best[url]["quality_score"]:
-            url_to_best[url] = result
+        if key not in url_to_best or quality_score > url_to_best[key]["quality_score"]:
+            url_to_best[key] = result
 
     return list(url_to_best.values())
 
