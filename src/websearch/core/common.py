@@ -41,7 +41,11 @@ def format_fallback_search_response(
 
     # Apply quality-first ranking algorithm for 3 engines
     ranked_results = quality_first_ranking_fallback(
-        google_startpage_results, bing_ddg_results, brave_results, num_results
+        google_startpage_results,
+        bing_ddg_results,
+        brave_results,
+        num_results,
+        query=search_query,
     )
 
     # Generate search ID and log response
@@ -102,6 +106,7 @@ def format_search_response(
         google_results,
         brave_results,
         num_results,
+        query=search_query,
     )
 
     # Get engine distribution for monitoring

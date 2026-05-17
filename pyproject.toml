@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "websearch"
-version = "2.3.0"
+version = "2.4.0"
 description = "Advanced web search and content extraction MCP server with multi-engine support"
 authors = ["Vishal Gupta <vishal@example.com>"]
 license = "MIT"
