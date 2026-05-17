@@ -2,12 +2,10 @@
 
 State is persisted atomically to a single JSON file via os.replace.
 All read-modify-write operations execute under a single re-entrant lock so
-concurrent **threads** cannot lose increments or reset counters twice.
-
-Note: this guard is not process-safe. Two MCP server processes (or a
-server plus a CLI) sharing the same quotas.json can still race on
-read-modify-write. For multi-process deployments, layer fcntl/portalocker
-file locking on top of _save_all_quotas_locked.
+concurrent **threads** cannot lose increments. For cross-process safety
+(e.g. uvx spawning multiple MCP servers, or a server plus a CLI sharing
+quotas.json), we additionally take an exclusive fcntl lock on a sibling
+.lock file around the full read-modify-write window.
 """
 
 import json
@@ -15,13 +13,39 @@ import logging
 import os
 import tempfile
 import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Iterator
+
+try:
+    import fcntl  # POSIX only
+except ImportError:  # pragma: no cover - Windows
+    fcntl = None  # type: ignore[assignment]
 
 from ..config import BRAVE_MONTHLY_QUOTA, GOOGLE_DAILY_QUOTA
 from .paths import get_quota_dir
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _file_lock(lock_path: Path) -> Iterator[None]:
+    """Cross-process exclusive lock via fcntl on POSIX; no-op elsewhere."""
+    if fcntl is None:
+        yield
+        return
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    # 'a' so the file is created if missing without truncating
+    with open(lock_path, "a", encoding="utf-8") as fh:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+            yield
+        finally:
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
 
 
 class UnifiedQuotaManager:
@@ -30,6 +54,7 @@ class UnifiedQuotaManager:
     def __init__(self):
         self.quota_dir = get_quota_dir()
         self.quota_file = self.quota_dir / "quotas.json"
+        self.lock_file = self.quota_dir / "quotas.lock"
         google_limit = int(
             os.getenv("GOOGLE_DAILY_QUOTA", str(GOOGLE_DAILY_QUOTA))
         )
@@ -104,7 +129,10 @@ class UnifiedQuotaManager:
     def can_make_request(self, service: str) -> bool:
         if service not in self.configs:
             return False
-        with self._lock:
+        # Lock order: thread RLock outside, fcntl inside. RLock is per-thread,
+        # so the same thread re-entering get_usage from record_request still
+        # works; fcntl is per-process so we serialize cross-process here.
+        with self._lock, _file_lock(self.lock_file):
             all_quotas = self._load_all_quotas_locked()
             data = self._maybe_reset(service, all_quotas)
             return data.get("used", 0) < self.configs[service]["limit"]
@@ -112,7 +140,7 @@ class UnifiedQuotaManager:
     def record_request(self, service: str) -> None:
         if service not in self.configs:
             return
-        with self._lock:
+        with self._lock, _file_lock(self.lock_file):
             all_quotas = self._load_all_quotas_locked()
             data = self._maybe_reset(service, all_quotas)
             data["used"] = data.get("used", 0) + 1
@@ -122,7 +150,7 @@ class UnifiedQuotaManager:
     def get_usage(self, service: str) -> Dict[str, Any]:
         if service not in self.configs:
             return {"used": 0, "limit": 0, "period": "unknown"}
-        with self._lock:
+        with self._lock, _file_lock(self.lock_file):
             all_quotas = self._load_all_quotas_locked()
             data = self._maybe_reset(service, all_quotas)
             return {
