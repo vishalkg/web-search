@@ -4,12 +4,14 @@
 import asyncio
 import json
 import logging
-from datetime import UTC, datetime
 from typing import List, Union
 
 from fastmcp import FastMCP
 
 from .config import MAX_BATCH_URLS, MAX_NUM_RESULTS
+from .schemas import (BatchPageContent, PageContent, PageContentError,
+                      QuotaStatus, SearchResponse, ServiceQuota,
+                      ToolValidationError, _utc_now_z, page_content_from_dict)
 from .utils.paths import find_env_file
 from .utils.url_validation import URLValidationError, require_valid_url
 
@@ -55,15 +57,12 @@ def _clamp_num_results(num_results: int) -> int:
     return min(num_results, MAX_NUM_RESULTS)
 
 
-def _build_url_error(url: str, reason: str) -> dict:
-    return {
-        "url": url,
-        "success": False,
-        "error": f"URL rejected: {reason}",
-        "error_type": "validation",
-        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        "cached": False,
-    }
+def _url_validation_error(url: str, reason: str) -> PageContentError:
+    return PageContentError(
+        url=url,
+        error=f"URL rejected: {reason}",
+        error_type="validation",
+    )
 
 
 @mcp.tool(
@@ -80,25 +79,23 @@ def _build_url_error(url: str, reason: str) -> dict:
         "- search_query (str): the query string\n"
         f"- num_results (int, 1-{MAX_NUM_RESULTS}, default 10): max results\n"
         "- force_refresh (bool, default False): bypass the search cache\n\n"
-        "Returns a JSON string with: query, total_results, sources (per-engine "
+        "Returns a SearchResponse with: query, total_results, sources (per-engine "
         "counts), engine_distribution, results (list of {title, url, snippet, "
-        "source, quality_score, rank}), and cached (bool)."
+        "source, quality_score, rank}), and cached (bool). On invalid input "
+        "returns a ToolValidationError instead."
     ),
 )
 async def search_web(
     search_query: str, num_results: int = 10, force_refresh: bool = False
-) -> str:
+) -> Union[SearchResponse, ToolValidationError]:
     """Perform a web search using multiple search engines with native async."""
     if not isinstance(search_query, str) or not search_query.strip():
-        return json.dumps(
-            {
-                "error": "search_query must be a non-empty string",
-                "error_type": "validation",
-            }
-        )
-    return await async_search_web(
+        return ToolValidationError(error="search_query must be a non-empty string")
+
+    raw = await async_search_web(
         search_query, _clamp_num_results(num_results), force_refresh=force_refresh
     )
+    return SearchResponse.model_validate(json.loads(raw))
 
 
 @mcp.tool(
@@ -108,12 +105,16 @@ async def search_web(
         "string or a list of URLs (up to "
         f"{MAX_BATCH_URLS}); batch requests fetch concurrently.\n\n"
         "Only http/https URLs are accepted. Requests to private, loopback, or cloud "
-        "metadata addresses are rejected. Each result includes success, content (or "
-        "error_type/error), content_length, truncated, cached, and timestamp.\n\n"
-        "Use this to read article text, documentation, or full search-result pages."
+        "metadata addresses are rejected with error_type='validation'. Per-URL "
+        "errors carry an error_type the agent can branch on (timeout, connection, "
+        "http_4xx, http_5xx, redirect, too_large, validation, parse, general).\n\n"
+        "A single URL returns a PageContent (success or error). A list returns a "
+        "BatchPageContent. An invalid input returns a ToolValidationError."
     ),
 )
-async def fetch_page_content(urls: Union[str, List[str]]) -> str:
+async def fetch_page_content(
+    urls: Union[str, List[str]],
+) -> Union[PageContent, BatchPageContent, ToolValidationError]:
     """Fetch and extract content from web pages using native async."""
     from .utils.tracking import (extract_tracking_from_url,
                                  log_selection_metrics)
@@ -131,25 +132,16 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
         try:
             require_valid_url(clean_url)
         except URLValidationError as exc:
-            return json.dumps(_build_url_error(clean_url, str(exc)), indent=2)
+            return _url_validation_error(clean_url, str(exc))
 
-        result = await fetch_single_page_content_async(clean_url)
-        return json.dumps(result, indent=2)
+        result_dict = await fetch_single_page_content_async(clean_url)
+        return page_content_from_dict(result_dict)
 
     if not isinstance(urls, list) or not urls:
-        return json.dumps(
-            {
-                "error": "urls must be a non-empty list or string",
-                "error_type": "validation",
-            }
-        )
+        return ToolValidationError(error="urls must be a non-empty list or string")
     if len(urls) > MAX_BATCH_URLS:
-        return json.dumps(
-            {
-                "error": f"too many URLs (max {MAX_BATCH_URLS})",
-                "error_type": "validation",
-                "received": len(urls),
-            }
+        return ToolValidationError(
+            error=f"too many URLs (max {MAX_BATCH_URLS})", received=len(urls)
         )
 
     logger.info(f"Batch URL fetch: {len(urls)} URLs")
@@ -165,7 +157,7 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
             try:
                 require_valid_url(clean_url)
             except URLValidationError as exc:
-                return _build_url_error(clean_url, str(exc))
+                return _url_validation_error(clean_url, str(exc)).model_dump()
             return await fetch_single_page_content_async(clean_url)
         except Exception as e:
             return {
@@ -173,7 +165,7 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
                 "success": False,
                 "error": f"Fetch error: {str(e)}",
                 "error_type": "general",
-                "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                "timestamp": _utc_now_z(),
                 "cached": False,
             }
 
@@ -181,37 +173,31 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
         *[fetch_with_tracking(url) for url in urls],
         return_exceptions=True,
     )
-    # Convert any exception escapees to error dicts so one bad URL never sinks
-    # the batch. fetch_with_tracking already catches Exception, but BaseException
-    # (CancelledError on older 3.8s, etc.) can still slip past.
-    results: list = []
+
+    typed_results: List[PageContent] = []
     for url, raw in zip(urls, raw_results):
         if isinstance(raw, BaseException):
-            results.append({
-                "url": url,
-                "success": False,
-                "error": f"Unhandled error: {raw}",
-                "error_type": "general",
-                "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-                "cached": False,
-            })
+            typed_results.append(
+                PageContentError(
+                    url=url,
+                    error=f"Unhandled error: {raw}",
+                    error_type="general",
+                )
+            )
         else:
-            results.append(raw)
+            typed_results.append(page_content_from_dict(raw))
 
-    successful = sum(1 for r in results if r.get("success", False))
-    batch_response = {
-        "batch_request": True,
-        "total_urls": len(urls),
-        "successful_fetches": successful,
-        "failed_fetches": len(urls) - successful,
-        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        "results": list(results),
-    }
-
+    successful = sum(1 for r in typed_results if r.success)
+    batch = BatchPageContent(
+        total_urls=len(urls),
+        successful_fetches=successful,
+        failed_fetches=len(urls) - successful,
+        results=typed_results,
+    )
     logger.info(
         f"Async batch fetch completed: {successful}/{len(urls)} successful"
     )
-    return json.dumps(batch_response, indent=2)
+    return batch
 
 
 @mcp.tool(
@@ -222,32 +208,28 @@ async def fetch_page_content(urls: Union[str, List[str]]) -> str:
         "Use this to monitor API usage before issuing quota-bound search calls."
     ),
 )
-def get_quota_status() -> str:
+def get_quota_status() -> QuotaStatus:
     """Get current quota status for all search APIs."""
     from .utils.unified_quota import unified_quota
 
-    timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
-    quota_status = {"timestamp": timestamp, "services": {}}
-
+    services: dict = {}
     for service in ["google", "brave"]:
         usage = unified_quota.get_usage(service)
         used = usage["used"]
         limit = usage["limit"]
         period = usage["period"]
-
         percentage = (used / limit * 100) if limit > 0 else 0
         remaining = max(0, limit - used)
+        services[service] = ServiceQuota(
+            used=used,
+            limit=limit,
+            period=period,
+            percentage_used=round(percentage, 1),
+            remaining=remaining,
+            status="available" if remaining > 0 else "exhausted",
+        ).model_dump()
 
-        quota_status["services"][service] = {
-            "used": used,
-            "limit": limit,
-            "period": period,
-            "percentage_used": round(percentage, 1),
-            "remaining": remaining,
-            "status": "available" if remaining > 0 else "exhausted",
-        }
-
-    return json.dumps(quota_status, indent=2)
+    return QuotaStatus(services=services)
 
 
 def main():

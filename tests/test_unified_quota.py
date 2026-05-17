@@ -80,3 +80,54 @@ def test_concurrent_increments_are_atomic(quota_manager):
     for t in threads:
         t.join()
     assert quota_manager.get_usage("google")["used"] == 50
+
+
+def _worker_increment(quota_dir: str, n: int) -> None:
+    """Subprocess worker: bump 'google' n times against the shared file."""
+    import os as _os
+    import sys as _sys
+
+    # Re-import in subprocess to get a fresh module state
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "src"))
+    from websearch.utils import unified_quota as _uq
+
+    # Point at shared dir
+    _uq.get_quota_dir = lambda: __import__("pathlib").Path(quota_dir)
+    mgr = _uq.UnifiedQuotaManager()
+    mgr.configs = {
+        "google": {"limit": 100_000, "period": "daily"},
+        "brave": {"limit": 100_000, "period": "monthly"},
+    }
+    for _ in range(n):
+        mgr.record_request("google")
+
+
+def test_concurrent_increments_across_processes(tmp_path, monkeypatch):
+    """fcntl file lock prevents lost updates between processes."""
+    import multiprocessing as mp
+
+    n_procs = 4
+    per_proc = 25
+    procs = [
+        mp.get_context("spawn").Process(
+            target=_worker_increment, args=(str(tmp_path), per_proc)
+        )
+        for _ in range(n_procs)
+    ]
+    for p in procs:
+        p.start()
+    for p in procs:
+        p.join(timeout=30)
+        assert p.exitcode == 0, f"worker exited {p.exitcode}"
+
+    # Read the final state directly with a fresh manager. monkeypatch is
+    # important: without it, get_quota_dir leaks tmp_path into later tests.
+    from websearch.utils import unified_quota as uq_mod
+
+    monkeypatch.setattr(uq_mod, "get_quota_dir", lambda: tmp_path)
+    mgr = uq_mod.UnifiedQuotaManager()
+    mgr.configs = {
+        "google": {"limit": 100_000, "period": "daily"},
+        "brave": {"limit": 100_000, "period": "monthly"},
+    }
+    assert mgr.get_usage("google")["used"] == n_procs * per_proc
