@@ -65,11 +65,19 @@ def get_log_file() -> Path:
 
 
 def find_env_file() -> Path:
-    """Find .env file in priority order."""
-    # Priority order for .env loading
+    """Find .env file in priority order.
+
+    Only ever resolves under the websearch home/config locations — never the
+    process CWD. As an MCP server the CWD is arbitrary (it's whatever project
+    the MCP client launched us from), so honoring a CWD .env let an unrelated
+    project's .env silently hijack config: it would be loaded first, lack the
+    search API keys, and — since load_dotenv doesn't override already-set
+    values — leave Google/Brave unconfigured, dropping the server to Bing
+    scraping.
+    """
+    # Priority order for .env loading (all under ~/.websearch via WEBSEARCH_HOME)
     candidates = [
-        Path.cwd() / ".env",  # Current directory (highest priority)
-        get_config_dir() / ".env",  # User config
+        get_config_dir() / ".env",  # User config (WEBSEARCH_HOME/config)
         Path.home() / ".websearch" / ".env",  # Legacy location
     ]
 
